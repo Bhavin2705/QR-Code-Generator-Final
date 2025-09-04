@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Connect Hub: Smart Sharing Made Simple</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=light_mode" />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+</head>
+
+<body>
+    <div class="background-elements">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon"><i class="fas fa-qrcode"></i></div>
+                    <div class="logo-text">
+                        <h1>QR Connect Hub</h1>
+                        <p>Smart Sharing Made Simple</p>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+            </div>
+        </header>
+
+        <section class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-qrcode"></i></div>
+                <div class="stat-content">
+                    <h3 id="totalGenerated">0</h3>
+                    <p>QR Codes Generated</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-camera"></i></div>
+                <div class="stat-content">
+                    <h3 id="totalScanned">0</h3>
+                    <p>Images Scanned</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-content">
+                    <h3 id="lastActivity">Never</h3>
+                    <p>Last Activity</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="action-cards">
+            <div class="action-card">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-qrcode"></i></div>
+                    <div class="card-title">
+                        <h2>Generate QR Code</h2>
+                        <p>Create professional QR codes instantly</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="input-section">
+                        <div class="input-wrapper">
+                            <textarea id="qrText" rows="4" maxlength="500"
+                                placeholder="Enter text or URL to generate QR code"></textarea>
+                            <button class="generate-btn" id="generateBtn"><i class="fas fa-qrcode"></i>
+                                Generate</button>
+                        </div>
+                        <div class="character-count" id="charCount">0/500 characters</div>
+                    </div>
+                    <div class="input-section">
+                        <div class="upload-area" id="qrImageUploadArea">
+                            <input type="file" id="qrImageInput" accept="image/*">
+                            <div class="upload-content">
+                                <i class="fas fa-upload"></i>
+                                <h3>Upload image to generate QR code</h3>
+                                <p>Supports JPG, PNG, GIF up to 10MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-section">
+                        <div class="upload-area" id="docUploadArea">
+                            <input type="file" id="docFileInput"
+                                accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+                            <div class="upload-content">
+                                <i class="fas fa-file"></i>
+                                <h3>Upload document to generate QR code</h3>
+                                <p>Supports PDF, DOC, DOCX, TXT up to 50MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <div class="qr-result" id="qrResult">
+                            <div class="placeholder-content">
+                                <i class="fas fa-qrcode"></i>
+                                <p>Your QR code will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-card">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-camera"></i></div>
+                    <div class="card-title">
+                        <h2>Scan QR Code</h2>
+                        <p>Upload and decode QR code images</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="input-section">
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" id="qrFile" accept="image/*">
+                            <div class="upload-content">
+                                <i class="fas fa-upload"></i>
+                                <h3>Drop image here or click to browse</h3>
+                                <p>Supports JPG, PNG, GIF up to 10MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <div class="scan-result" id="scanResult">
+                            <div class="placeholder-content">
+                                <i class="fas fa-camera"></i>
+                                <p>Scan results will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="history-section">
+            <div class="section-header">
+                <h2><i class="fas fa-history"></i> Recent Activity</h2>
+                <button class="clear-history-btn" id="clearHistoryBtn"><i class="fas fa-trash"></i> Clear All</button>
+            </div>
+            <div class="history-container">
+                <div class="history-list" id="historyList">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>No activity yet</h3>
+                        <p>Generated or scanned QR codes will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="custom-modal-overlay" id="customModal" style="display: none;">
+        <div class="custom-modal">
+            <div class="custom-modal-header" id="customModalTitle">Confirm Action</div>
+            <div class="custom-modal-body" id="customModalBody">Are you sure?</div>
+            <div class="custom-modal-footer">
+                <button class="custom-modal-btn cancel" id="customModalCancel">Cancel</button>
+                <button class="custom-modal-btn ok" id="customModalOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

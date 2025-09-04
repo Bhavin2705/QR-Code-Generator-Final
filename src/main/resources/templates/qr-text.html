@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Text</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --olive: #808000;
+            --olive-dark: #6B8E23;
+            --olive-light: #BFCF7A;
+            --background: #f7fbe8;
+            --surface: #fffef6;
+            --text: #232b1b;
+            --text-muted: #6b6b4e;
+            --radius: 18px;
+            --shadow: 0 4px 24px 0 rgba(128, 128, 0, 0.08);
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--background) 0%, var(--olive-light) 100%);
+            font-family: 'DM Sans', Arial, sans-serif;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-container {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2.5em 2em 2em 2em;
+            max-width: 420px;
+            width: 100%;
+            margin: 2em auto;
+            text-align: center;
+            border: 2px solid var(--olive-light);
+        }
+
+        .qr-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.7em;
+            margin-bottom: 1.2em;
+        }
+
+        .qr-header-icon {
+            font-size: 2.2em;
+            color: var(--olive-dark);
+        }
+
+        .qr-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--olive);
+            letter-spacing: 0.5px;
+        }
+
+        .qr-text {
+            font-size: 1.15em;
+            color: var(--text);
+            background: #f9fbe7;
+            padding: 1.2em 1em;
+            border-radius: 8px;
+            word-break: break-word;
+            margin-bottom: 1.5em;
+            border: 1.5px solid var(--olive-light);
+            min-height: 3em;
+        }
+
+        .qr-footer {
+            font-size: 0.98em;
+            color: var(--text-muted);
+            margin-top: 1.5em;
+        }
+
+        @media (max-width: 600px) {
+            .qr-container {
+                padding: 1.2em 0.5em 1.5em 0.5em;
+            }
+
+            .qr-title {
+                font-size: 1.15em;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="qr-container">
+        <div class="qr-header">
+            <span class="qr-header-icon"><i class="fas fa-qrcode"></i></span>
+            <span class="qr-title">QR Code Text</span>
+        </div>
+        <div class="qr-text" th:text="${text}"></div>
+        <div class="qr-footer">Scanned from QR | Powered by QR Studio Pro</div>
+    </div>
+</body>
+
+</html>

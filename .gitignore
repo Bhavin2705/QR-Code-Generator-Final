@@ -1,0 +1,49 @@
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs
+/.idea/
+*.iml
+*.ipr
+*.iws
+/.vscode/
+
+# Build
+/build/
+
+# Environment
+.env
+
+# Database
+*.db
+
+# Uploaded files
+/uploaded-docs/
+/uploaded-images/
+
+# Test output
+/surefire-reports/
+
+# Node.js (if frontend dev)
+/node_modules/
+
+# Misc
+*.swp
+*.swo
+
+# Ignore application config backups
+application.properties.bak
