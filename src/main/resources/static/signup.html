@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Connect Hub: Sign Up</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --gradient-background: linear-gradient(135deg, #e6fff5 0%, #e6fff5 100%);
+            --primary-color: #059669;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --surface: rgba(255, 255, 255, 0.8);
+            --surface-elevated: #ffffff;
+            --border-color: #e5e7eb;
+            --radius: 8px;
+            --radius-lg: 15px;
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --gradient-primary: linear-gradient(135deg, #059669, #047857);
+        }
+
+        .dark {
+            --gradient-background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --primary-color: #10b981;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #6b7280;
+            --surface: rgba(30, 41, 59, 0.8);
+            --surface-elevated: #1e293b;
+            --border-color: #374151;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: var(--gradient-background);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+            transition: background 0.3s ease;
+            overflow: hidden;
+        }
+
+        .container {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Custom scrollbar for container */
+        .container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .container::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 3px;
+        }
+
+        .container::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+
+        .logo {
+            font-size: 24px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo i {
+            margin-right: 10px;
+        }
+
+        h2 {
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: var(--surface-elevated);
+            color: var(--text-primary);
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            background: var(--surface-elevated);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+        }
+
+        .password-input {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            user-select: none;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        .password-requirements {
+            text-align: left;
+            margin-top: 25px;
+            padding: 15px;
+            background: var(--surface-elevated);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .password-requirements h3 {
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-requirements h3 i {
+            margin-right: 8px;
+            color: var(--primary-color);
+        }
+
+        .requirement {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .requirement:last-child {
+            margin-bottom: 0;
+        }
+
+        .requirement i {
+            margin-right: 8px;
+            width: 16px;
+        }
+
+        .requirement.valid {
+            color: #059669;
+        }
+
+        .requirement.invalid {
+            color: #ef4444;
+        }
+
+        /* Email validation styles */
+        .email-validation {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .email-validation.checking {
+            color: var(--text-muted);
+        }
+
+        .email-validation.available {
+            color: #059669;
+        }
+
+        .email-validation.unavailable {
+            color: #ef4444;
+        }
+
+        .email-input {
+            position: relative;
+        }
+
+        .signup-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--gradient-primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .signup-btn:hover {
+            background: linear-gradient(135deg, #047857, #065f46);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(5, 150, 105, 0.4);
+        }
+
+        .signup-btn:active {
+            transform: translateY(0);
+        }
+
+        .signup-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .login-link {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .login-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border: none;
+            background: var(--surface-elevated);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+    <div class="container">
+        <div class="logo"><i class="fas fa-qrcode"></i> QR Connect Hub</div>
+        <h2>Sign Up</h2>
+        <p>Create a new QR Connect Hub account</p>
+        <div class="input-group">
+            <input type="text" id="signupUsername" placeholder="Username" required>
+        </div>
+        <div class="input-group email-input">
+            <input type="email" id="signupEmail" placeholder="Email" required>
+            <i class="fas fa-spinner fa-spin email-validation checking" id="emailValidation" style="display: none;"></i>
+        </div>
+        <div class="input-group password-input">
+            <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" required>
+            <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+        </div>
+        <div class="input-group password-input">
+            <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+            <i class="fas fa-eye password-toggle" id="confirmToggle"></i>
+        </div>
+        <button class="signup-btn" id="signupBtn"><i class="fas fa-user-plus"></i> Sign Up</button>
+        <div class="login-link">Already have an account? <a href="login.html">Login</a></div>
+
+        <!-- Password Requirements Moved Here -->
+        <div class="password-requirements" id="passwordRequirements">
+            <h3><i class="fas fa-lock"></i> Password Requirements</h3>
+            <div class="requirement" id="lengthReq">
+                <i class="fas fa-times"></i>
+                <span>At least 6 characters</span>
+            </div>
+            <div class="requirement" id="letterReq">
+                <i class="fas fa-times"></i>
+                <span>At least one letter</span>
+            </div>
+            <div class="requirement" id="numberReq">
+                <i class="fas fa-times"></i>
+                <span>At least one number</span>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const signupBtn = document.getElementById('signupBtn');
+            const signupUsername = document.getElementById('signupUsername');
+            const signupEmail = document.getElementById('signupEmail');
+            const signupPassword = document.getElementById('signupPassword');
+            const confirmPassword = document.getElementById('confirmPassword');
+            const passwordToggle = document.getElementById('passwordToggle');
+            const confirmToggle = document.getElementById('confirmToggle');
+            const themeToggle = document.getElementById('themeToggle');
+            const emailValidation = document.getElementById('emailValidation');
+            const toast = document.getElementById('toast');
+
+            // Email validation state
+            let isEmailValid = false;
+            let emailCheckTimeout = null;
+
+            // Initialize theme
+            function initializeTheme() {
+                const savedTheme = localStorage.getItem('qr-studio-theme') || 'light';
+                document.body.classList.toggle('dark', savedTheme === 'dark');
+                updateThemeIcon(savedTheme);
+            }
+
+            function updateThemeIcon(theme) {
+                const icon = themeToggle.querySelector('i');
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+
+            // Theme toggle functionality
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.body.classList.contains('dark');
+                const newTheme = isDark ? 'light' : 'dark';
+
+                document.body.classList.toggle('dark');
+                localStorage.setItem('qr-studio-theme', newTheme);
+                updateThemeIcon(newTheme);
+            });
+
+            // Initialize theme on page load
+            initializeTheme();
+
+            // Email validation functions
+            function isValidEmailFormat(email) {
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                return emailRegex.test(email);
+            }
+
+            async function checkEmailAvailability(email) {
+                if (!email || email.trim() === '') {
+                    emailValidation.style.display = 'none';
+                    isEmailValid = false;
+                    updateSignupButton();
+                    return;
+                }
+
+                // First check email format
+                if (!isValidEmailFormat(email)) {
+                    emailValidation.style.display = 'block';
+                    emailValidation.className = 'fas fa-times email-validation unavailable';
+                    isEmailValid = false;
+                    showToast('Please enter a valid email address', 'error');
+                    updateSignupButton();
+                    return;
+                }
+
+                // Show checking state
+                emailValidation.style.display = 'block';
+                emailValidation.className = 'fas fa-spinner fa-spin email-validation checking';
+
+                try {
+                    const response = await fetch('/api/auth/check-email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email: email })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.available) {
+                        emailValidation.className = 'fas fa-check email-validation available';
+                        isEmailValid = true;
+                    } else {
+                        emailValidation.className = 'fas fa-times email-validation unavailable';
+                        isEmailValid = false;
+                        showToast(data.message || 'Email is already registered', 'error');
+                    }
+                } catch (error) {
+                    emailValidation.className = 'fas fa-exclamation-triangle email-validation unavailable';
+                    isEmailValid = false;
+                    showToast('Error checking email availability', 'error');
+                }
+
+                updateSignupButton();
+            }
+
+            function updateSignupButton() {
+                const isPasswordValid = validatePassword(signupPassword.value);
+                const hasUsername = signupUsername.value.trim() !== '';
+                const hasConfirmPassword = confirmPassword.value !== '';
+                const passwordsMatch = signupPassword.value === confirmPassword.value;
+
+                const isFormValid = hasUsername && isEmailValid && isPasswordValid && hasConfirmPassword && passwordsMatch;
+
+                signupBtn.disabled = !isFormValid;
+                if (isFormValid) {
+                    signupBtn.style.opacity = '1';
+                    signupBtn.style.cursor = 'pointer';
+                } else {
+                    signupBtn.style.opacity = '0.6';
+                    signupBtn.style.cursor = 'not-allowed';
+                }
+            }
+
+            // Real-time email validation with debounce
+            signupEmail.addEventListener('input', () => {
+                clearTimeout(emailCheckTimeout);
+                emailCheckTimeout = setTimeout(() => {
+                    checkEmailAvailability(signupEmail.value.trim());
+                }, 500); // 500ms debounce
+            });
+
+            // Password requirements elements
+            const lengthReq = document.getElementById('lengthReq');
+            const letterReq = document.getElementById('letterReq');
+            const numberReq = document.getElementById('numberReq');
+
+            // Password visibility toggles
+            passwordToggle.addEventListener('click', () => {
+                const type = signupPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                signupPassword.setAttribute('type', type);
+                passwordToggle.classList.toggle('fa-eye');
+                passwordToggle.classList.toggle('fa-eye-slash');
+            });
+
+            confirmToggle.addEventListener('click', () => {
+                const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                confirmPassword.setAttribute('type', type);
+                confirmToggle.classList.toggle('fa-eye');
+                confirmToggle.classList.toggle('fa-eye-slash');
+            });
+
+            // Password validation
+            function validatePassword(password) {
+                const minLength = password.length >= 6;
+                const hasLetter = /[a-zA-Z]/.test(password);
+                const hasNumber = /\d/.test(password);
+
+                // Update length requirement
+                if (minLength) {
+                    lengthReq.classList.add('valid');
+                    lengthReq.classList.remove('invalid');
+                    lengthReq.querySelector('i').className = 'fas fa-check';
+                } else {
+                    lengthReq.classList.add('invalid');
+                    lengthReq.classList.remove('valid');
+                    lengthReq.querySelector('i').className = 'fas fa-times';
+                }
+
+                // Update letter requirement
+                if (hasLetter) {
+                    letterReq.classList.add('valid');
+                    letterReq.classList.remove('invalid');
+                    letterReq.querySelector('i').className = 'fas fa-check';
+                } else {
+                    letterReq.classList.add('invalid');
+                    letterReq.classList.remove('valid');
+                    letterReq.querySelector('i').className = 'fas fa-times';
+                }
+
+                // Update number requirement
+                if (hasNumber) {
+                    numberReq.classList.add('valid');
+                    numberReq.classList.remove('invalid');
+                    numberReq.querySelector('i').className = 'fas fa-check';
+                } else {
+                    numberReq.classList.add('invalid');
+                    numberReq.classList.remove('valid');
+                    numberReq.querySelector('i').className = 'fas fa-times';
+                }
+
+                return minLength && hasLetter && hasNumber;
+            }
+
+            // Real-time password validation
+            signupPassword.addEventListener('input', () => {
+                validatePassword(signupPassword.value);
+                updateSignupButton();
+            });
+
+            // Add listeners for other form fields
+            signupUsername.addEventListener('input', updateSignupButton);
+            confirmPassword.addEventListener('input', updateSignupButton);
+
+            // Initial button state
+            updateSignupButton();
+
+            function showToast(message, type = 'success') {
+                toast.textContent = message;
+                toast.style.background = type === 'success' ? '#10b981' : '#ef4444';
+                toast.style.display = 'block';
+                setTimeout(() => toast.style.display = 'none', 3000);
+            }
+
+            async function signup() {
+                const username = signupUsername.value.trim();
+                const email = signupEmail.value.trim();
+                const password = signupPassword.value;
+                const confirm = confirmPassword.value;
+
+                if (!username || !email || !password || !confirm) {
+                    showToast('Please fill in all fields', 'error');
+                    return;
+                }
+
+                if (!isEmailValid) {
+                    showToast('Please enter a valid and available email address', 'error');
+                    return;
+                }
+
+                if (password !== confirm) {
+                    showToast('Passwords do not match', 'error');
+                    return;
+                }
+
+                if (!validatePassword(password)) {
+                    showToast('Password does not meet requirements', 'error');
+                    return;
+                }
+
+                try {
+                    signupBtn.disabled = true;
+                    signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+
+                    const response = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            email: email,
+                            password: password
+                        })
+                    });
+
+                    if (response.ok) {
+                        showToast('Account created successfully! Logging you in...', 'success');
+
+                        // Automatically log in the user after successful registration
+                        try {
+                            const loginResponse = await fetch('/api/auth/login', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    email: email,
+                                    password: password
+                                })
+                            });
+
+                            if (loginResponse.ok) {
+                                const loginData = await loginResponse.json();
+
+                                // Store the JWT token
+                                localStorage.setItem('authToken', loginData.token);
+
+                                showToast('Welcome to QR Connect Hub!', 'success');
+                                setTimeout(() => {
+                                    window.location.href = 'index.html';
+                                }, 1500);
+                            } else {
+                                // If auto-login fails, redirect to login page
+                                showToast('Account created! Please log in.', 'success');
+                                setTimeout(() => {
+                                    window.location.href = 'login.html';
+                                }, 2000);
+                            }
+                        } catch (loginError) {
+                            // If auto-login fails, redirect to login page
+                            showToast('Account created! Please log in.', 'success');
+                            setTimeout(() => {
+                                window.location.href = 'login.html';
+                            }, 2000);
+                        }
+                    } else {
+                        const errorText = await response.text();
+                        showToast(errorText || 'Failed to create account', 'error');
+                    }
+                } catch (error) {
+                    showToast('Network error. Please try again.', 'error');
+                } finally {
+                    signupBtn.disabled = false;
+                    signupBtn.innerHTML = '<i class="fas fa-user-plus"></i> Sign Up';
+                }
+            }
+
+            signupBtn.addEventListener('click', signup);
+
+            // Allow Enter key to submit
+            confirmPassword.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    signup();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

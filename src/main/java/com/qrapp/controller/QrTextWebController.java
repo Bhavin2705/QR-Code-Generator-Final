@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 public class QrTextWebController {
+
+
     @Autowired
     private QrCodeService qrCodeService;
 
@@ -20,7 +22,6 @@ public class QrTextWebController {
         try {
             qr = qrCodeService.getQrCodeById(id);
         } catch (Exception e) {
-            // Optionally log error
         }
         if (qr == null) {
             model.addAttribute("text", "QR code not found or invalid link.");

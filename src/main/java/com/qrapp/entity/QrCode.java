@@ -38,7 +38,6 @@ public class QrCode {
         this(inputText, "generated");
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }

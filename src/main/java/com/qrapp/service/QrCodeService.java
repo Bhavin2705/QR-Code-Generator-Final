@@ -86,7 +86,6 @@ public class QrCodeService {
                         java.nio.file.Path path = imageStorageService.load(filename);
                         java.nio.file.Files.deleteIfExists(path);
                     } catch (Exception e) {
-                        // Ignore file deletion errors
                     }
                 }
                 idx = inputText.indexOf(docPrefix);
@@ -96,7 +95,6 @@ public class QrCodeService {
                         java.nio.file.Path path = documentStorageService.load(filename);
                         java.nio.file.Files.deleteIfExists(path);
                     } catch (Exception e) {
-                        // Ignore file deletion errors
                     }
                 }
             }
@@ -153,7 +151,7 @@ public class QrCodeService {
 
     public String getNetworkHost() {
         if (!serverHostname.isEmpty()) {
-            return serverHostname; // Use configured hostname for public networks
+            return serverHostname; 
         }
         String fallback192 = null;
         try {

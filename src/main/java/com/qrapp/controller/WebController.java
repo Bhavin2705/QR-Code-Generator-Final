@@ -11,4 +11,14 @@ public class WebController {
     public String redirectToStaticIndex() {
         return "redirect:/index.html";
     }
+
+    @GetMapping("/login")
+    public String login() {
+        return "redirect:/login.html";
+    }
+
+    @GetMapping("/signup")
+    public String signup() {
+        return "redirect:/signup.html";
+    }
 }

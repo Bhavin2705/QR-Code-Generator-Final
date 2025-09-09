@@ -97,6 +97,15 @@ function updateCharCount() {
     charCount.style.color = count > 450 ? '#ef4444' : 'var(--text-muted)';
 }
 
+// Add this function to ensure proper dropdown positioning
+function ensureDropdownVisibility() {
+    const profileDropdown = document.getElementById('profileDropdown');
+    if (profileDropdown) {
+        profileDropdown.style.zIndex = '10000';
+        profileDropdown.style.position = 'absolute';
+    }
+}
+
 // QR Generation from Text (Backend)
 async function generateQR() {
     const text = qrTextInput.value.trim();
@@ -120,7 +129,7 @@ async function generateQR() {
 
         const historyItem = {
             id: data.id,
-            text: data.text, // Updated to match backend response
+            text: data.text,
             image: data.image,
             type: data.type,
             timestamp: data.timestamp
@@ -164,7 +173,7 @@ async function generateQRFromImage(file) {
 
         const historyItem = {
             id: data.id,
-            text: data.text, // Updated to match backend response
+            text: data.text,
             image: data.image,
             type: data.type,
             timestamp: data.timestamp
@@ -554,9 +563,15 @@ function showError(element, message) {
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
+
+    let icon = 'check-circle';
+    if (type === 'error') icon = 'exclamation-circle';
+    else if (type === 'warning') icon = 'exclamation-triangle';
+    else if (type === 'info') icon = 'info-circle';
+
     toast.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle'}"></i>
+            <i class="fas fa-${icon}"></i>
             <span>${message}</span>
         </div>
     `;
@@ -568,6 +583,125 @@ function showToast(message, type = 'success') {
         toast.style.transform = 'translateX(100%)';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// Authentication functions
+async function checkAuthStatus() {
+    const token = localStorage.getItem('authToken');
+    const userMenu = document.getElementById('userMenu');
+    const authBtn = document.getElementById('authBtn');
+    const currentUsername = document.getElementById('currentUsername');
+    const profileName = document.getElementById('profileName');
+    const profileEmail = document.getElementById('profileEmail');
+
+    if (!token) {
+        // User is not logged in - show login button
+        userMenu.style.display = 'none';
+        authBtn.style.display = 'block';
+        authBtn.textContent = 'Login';
+        authBtn.onclick = () => window.location.href = 'login.html';
+        return;
+    }
+
+    try {
+        // Fetch user profile from backend
+        const response = await fetch('/api/auth/profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token })
+        });
+
+        const data = await response.json();
+
+        if (data.success && response.ok) {
+            // User is logged in - show profile dropdown
+            userMenu.style.display = 'block';
+            authBtn.style.display = 'none';
+            currentUsername.textContent = data.username;
+            profileName.textContent = data.username;
+            profileEmail.textContent = data.email;
+
+            // Initialize profile dropdown functionality
+            initializeProfileDropdown();
+        } else {
+            // Token is invalid, remove it and show login
+            localStorage.removeItem('authToken');
+            userMenu.style.display = 'none';
+            authBtn.style.display = 'block';
+            authBtn.textContent = 'Login';
+            authBtn.onclick = () => window.location.href = 'login.html';
+        }
+    } catch (error) {
+        console.error('Error checking auth status:', error);
+        // On error, assume not authenticated
+        localStorage.removeItem('authToken');
+        userMenu.style.display = 'none';
+        authBtn.style.display = 'block';
+        authBtn.textContent = 'Login';
+        authBtn.onclick = () => window.location.href = 'login.html';
+    }
+} function initializeProfileDropdown() {
+    const profileBtn = document.getElementById('profileBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const editProfile = document.getElementById('editProfile');
+    const accountSettings = document.getElementById('accountSettings');
+
+    // Ensure dropdown visibility properties
+    ensureDropdownVisibility();
+
+    // Toggle dropdown
+    profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileBtn.classList.toggle('active');
+        profileDropdown.classList.toggle('show');
+
+        // Re-ensure visibility properties on toggle
+        ensureDropdownVisibility();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+            profileBtn.classList.remove('active');
+            profileDropdown.classList.remove('show');
+        }
+    });
+
+    // Handle menu items
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        logout();
+    });
+
+    editProfile.addEventListener('click', (e) => {
+        e.preventDefault();
+        profileDropdown.classList.remove('show');
+        profileBtn.classList.remove('active');
+        // Open the edit profile modal
+        if (!localStorage.getItem('authToken')) {
+            showToast('Please log in to edit your profile', 'error');
+            return;
+        }
+        openEditProfileModal();
+    });
+
+    accountSettings.addEventListener('click', (e) => {
+        e.preventDefault();
+        showToast('Account settings coming soon', 'info');
+        profileDropdown.classList.remove('show');
+        profileBtn.classList.remove('active');
+    });
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    showToast('Logged out successfully', 'success');
+    setTimeout(() => {
+        window.location.href = 'login.html';
+    }, 1000);
 }
 
 // Attach event listeners
@@ -611,10 +745,14 @@ function attachEventListeners() {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
+    checkAuthStatus();
     attachEventListeners();
     loadHistory();
     loadStats();
     initializeTheme();
+
+    // Additional call to ensure dropdown visibility
+    setTimeout(ensureDropdownVisibility, 100);
 });
 
 // Upload document and generate QR
@@ -637,7 +775,7 @@ async function uploadDocument(file) {
         if (!response.ok || data.error) throw new Error(data.error || 'Failed to upload document');
         const historyItem = {
             id: data.id,
-            text: data.text, // Updated to match backend response
+            text: data.text,
             image: data.image,
             type: data.type,
             timestamp: data.timestamp
@@ -653,3 +791,161 @@ async function uploadDocument(file) {
         hideLoading();
     }
 }
+
+/* Edit Profile Modal: fetch, populate, validation, and update */
+// Elements
+const editProfileModal = document.getElementById('editProfileModal');
+const editUsername = document.getElementById('editUsername');
+const editEmail = document.getElementById('editEmail');
+const emailValidationFeedback = document.getElementById('emailValidationFeedback');
+const newPassword = document.getElementById('newPassword');
+const confirmNewPassword = document.getElementById('confirmNewPassword');
+const saveProfileChanges = document.getElementById('saveProfileChanges');
+const cancelEditProfile = document.getElementById('cancelEditProfile');
+const closeEditProfileModal = document.getElementById('closeEditProfileModal');
+// currentPassword removed by design
+const toggleCurrentPassword = null;
+const toggleNewPassword = document.getElementById('toggleNewPassword');
+const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+
+let profileToken = localStorage.getItem('authToken') || null;
+
+// Open modal when Edit Profile clicked
+document.addEventListener('click', async (e) => {
+    if (e.target.closest('#editProfile') || e.target.id === 'editProfile') {
+        if (!profileToken) {
+            showToast('Please log in to edit your profile', 'error');
+            return;
+        }
+        await openEditProfileModal();
+    }
+});
+
+async function openEditProfileModal() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: profileToken })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch profile');
+
+        editUsername.value = data.username || '';
+        editEmail.value = data.email || '';
+        emailValidationFeedback.textContent = '';
+        // currentPassword removed from modal
+        newPassword.value = '';
+        confirmNewPassword.value = '';
+
+        editProfileModal.style.display = 'flex';
+    } catch (err) {
+        showToast(err.message || 'Error fetching profile', 'error');
+    }
+}
+
+function closeEditModal() {
+    editProfileModal.style.display = 'none';
+}
+
+closeEditProfileModal.addEventListener('click', closeEditModal);
+cancelEditProfile.addEventListener('click', closeEditModal);
+
+// Password toggle handlers (new and confirm fields)
+toggleNewPassword?.addEventListener('click', () => togglePasswordField(newPassword, toggleNewPassword));
+toggleConfirmPassword?.addEventListener('click', () => togglePasswordField(confirmNewPassword, toggleConfirmPassword));
+
+function togglePasswordField(field, btn) {
+    if (!field || !btn) return;
+    const isPassword = field.getAttribute('type') === 'password';
+    field.setAttribute('type', isPassword ? 'text' : 'password');
+    const icon = btn.querySelector('i');
+    if (!icon) return;
+    if (isPassword) {
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// Email format + availability check
+let emailCheckTimeoutEdit;
+editEmail?.addEventListener('input', () => {
+    clearTimeout(emailCheckTimeoutEdit);
+    emailValidationFeedback.textContent = '';
+    emailCheckTimeoutEdit = setTimeout(async () => {
+        const email = editEmail.value.trim();
+        if (!email) return;
+        const isValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+        if (!isValid) {
+            emailValidationFeedback.textContent = 'Invalid email format';
+            emailValidationFeedback.style.color = 'var(--text-secondary)';
+            return;
+        }
+        try {
+            const resp = await fetch('/api/auth/check-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+            const json = await resp.json();
+            if (json.available) {
+                emailValidationFeedback.textContent = 'Email available';
+                emailValidationFeedback.style.color = '#059669';
+            } else {
+                emailValidationFeedback.textContent = json.message || 'Email already in use';
+                emailValidationFeedback.style.color = '#ef4444';
+            }
+        } catch (e) {
+            emailValidationFeedback.textContent = 'Error checking email';
+            emailValidationFeedback.style.color = '#ef4444';
+        }
+    }, 500);
+});
+
+// Save profile changes
+saveProfileChanges.addEventListener('click', async () => {
+    const usernameVal = editUsername.value.trim();
+    const emailVal = editEmail.value.trim();
+    // currentPassword removed by design
+    const newPass = newPassword.value;
+    const confirmPass = confirmNewPassword.value;
+
+    if (!usernameVal || !emailVal) {
+        showToast('Username and email are required', 'error');
+        return;
+    }
+
+    if (newPass && newPass.length < 6) {
+        showToast('New password must be at least 6 characters', 'error');
+        return;
+    }
+
+    if (newPass && newPass !== confirmPass) {
+        showToast('New passwords do not match', 'error');
+        return;
+    }
+
+    try {
+        saveProfileChanges.disabled = true;
+        saveProfileChanges.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const resp = await fetch('/api/auth/profile/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: profileToken, username: usernameVal, email: emailVal, newPassword: newPass })
+        });
+        const json = await resp.json();
+        if (!resp.ok || !json.success) throw new Error(json.message || 'Failed to update profile');
+
+        // Update local UI and token if email changed (optional: server may return a refreshed token in future)
+        document.getElementById('profileName').textContent = json.username || usernameVal;
+        document.getElementById('profileEmail').textContent = json.email || emailVal;
+
+        showToast(json.message || 'Profile updated', 'success');
+        setTimeout(() => closeEditModal(), 900);
+    } catch (err) {
+        showToast(err.message || 'Error updating profile', 'error');
+    } finally {
+        saveProfileChanges.disabled = false;
+        saveProfileChanges.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    }
+});

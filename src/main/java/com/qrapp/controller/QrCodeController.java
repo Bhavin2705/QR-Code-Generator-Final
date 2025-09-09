@@ -118,7 +118,7 @@ public class QrCodeController {
     }
 
     @PostMapping(value = "/generate-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> generateQrFromImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> generateQrFromImage(@RequestParam("file") MultipartFile file) {
         try {
             Map<String, Object> result = qrCodeService.generateQrCodeFromImageFile(file);
             return ResponseEntity.ok(result);
@@ -128,7 +128,7 @@ public class QrCodeController {
     }
 
     @PostMapping(value = "/upload-doc", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadDocument(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> uploadDocument(@RequestParam("file") MultipartFile file) {
         try {
             Map<String, Object> result = qrCodeService.generateQrCodeForDocument(file);
             return ResponseEntity.ok(result);
@@ -175,7 +175,7 @@ public class QrCodeController {
     }
 
     @PostMapping(value = "/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> scanQrCode(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> scanQrCode(@RequestParam("file") MultipartFile file) {
         try {
             Map<String, Object> result = qrCodeService.scanQrCodeFromImage(file);
             return ResponseEntity.ok(result);
