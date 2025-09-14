@@ -377,7 +377,7 @@ async function loadHistory() {
                     <img src="${item.image || ''}" alt="QR Code" style="max-width: 50px; max-height: 50px; margin-top: 5px;">
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="regenerateQR('${safeText}')"
+                    <button class="edit-qr-btn" data-id="${item.id}" data-text="${safeText}"
                             style="padding: 6px 12px; background: var(--gradient-primary); color: white; border: none; border-radius: var(--radius); cursor: pointer; font-size: 0.8rem;">
                         <i class='fas fa-pen-to-square'></i>
                     </button>
@@ -388,6 +388,78 @@ async function loadHistory() {
             </div>
             `;
         }).join('');
+// Edit QR Modal logic
+let currentEditQrId = null;
+
+const editQrModal = document.getElementById('editQrModal');
+const editQrText = document.getElementById('editQrText');
+const editQrCharCount = document.getElementById('editQrCharCount');
+const cancelEditQr = document.getElementById('cancelEditQr');
+const saveEditQr = document.getElementById('saveEditQr');
+const closeEditQrModalBtn = document.getElementById('closeEditQrModal');
+
+function openEditQrModal(id, text) {
+    currentEditQrId = id;
+    editQrText.value = text;
+    updateEditQrCharCount();
+    editQrModal.style.display = 'flex';
+    document.body.classList.add('no-scroll');
+    setTimeout(() => { editQrText.focus(); }, 100);
+}
+
+function closeEditQrModal() {
+    editQrModal.style.display = 'none';
+    document.body.classList.remove('no-scroll');
+    currentEditQrId = null;
+}
+
+function updateEditQrCharCount() {
+    if (!editQrCharCount) return;
+    const count = editQrText.value.length;
+    editQrCharCount.textContent = `${count}/750 characters`;
+    editQrCharCount.style.color = count > 700 ? '#ef4444' : 'var(--text-muted)';
+}
+
+editQrText?.addEventListener('input', updateEditQrCharCount);
+cancelEditQr?.addEventListener('click', closeEditQrModal);
+closeEditQrModalBtn?.addEventListener('click', closeEditQrModal);
+
+saveEditQr?.addEventListener('click', async () => {
+    const newText = editQrText.value.trim();
+    if (!newText) {
+        showToast('QR content cannot be empty', 'error');
+        return;
+    }
+    if (newText.length > 750) {
+        showToast('QR content exceeds 750 characters', 'error');
+        return;
+    }
+    // Call backend to update QR content (implement endpoint as needed)
+    try {
+        const response = await fetch(`/api/qr/${currentEditQrId}/update`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ text: newText })
+        });
+        const data = await response.json();
+        if (!response.ok || data.error) throw new Error(data.error || 'Failed to update QR');
+        showToast('QR updated successfully', 'success');
+        closeEditQrModal();
+        await loadHistory();
+    } catch (e) {
+        showToast(e.message || 'Failed to update QR', 'error');
+    }
+});
+
+// Delegate click for edit-qr-btns
+document.addEventListener('click', function (e) {
+    if (e.target.closest('.edit-qr-btn')) {
+        const btn = e.target.closest('.edit-qr-btn');
+        const id = btn.getAttribute('data-id');
+        const text = btn.getAttribute('data-text');
+        openEditQrModal(id, text);
+    }
+});
     } catch (error) {
         console.error('Error loading history:', error);
         historyList.innerHTML = `
@@ -467,9 +539,11 @@ function showModal({ title = 'Confirm', body = '', okText = 'OK', cancelText = '
     btnOk.className = 'custom-modal-btn ' + (okClass || 'ok');
 
     modal.style.display = 'flex';
+    document.body.classList.add('no-scroll');
 
     const cleanup = () => {
         modal.style.display = 'none';
+        document.body.classList.remove('no-scroll');
         btnOk.onclick = null;
         btnCancel.onclick = null;
     };
@@ -877,10 +951,12 @@ async function openEditProfileModal() {
     confirmNewPassword.value = '';
 
     editProfileModal.style.display = 'flex';
+    document.body.classList.add('no-scroll');
 }
 
 function closeEditModal() {
     editProfileModal.style.display = 'none';
+    document.body.classList.remove('no-scroll');
 }
 
 closeEditProfileModal.addEventListener('click', closeEditModal);

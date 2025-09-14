@@ -1,3 +1,4 @@
+
 package com.qrapp.service;
 
 import java.awt.image.BufferedImage;
@@ -37,6 +38,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class QrCodeService {
+    // Save or update an existing QR code
+    public QrCode saveQrCode(QrCode qrCode) {
+        return qrCodeRepository.save(qrCode);
+    }
 
     @Autowired
     private ImageStorageService imageStorageService;

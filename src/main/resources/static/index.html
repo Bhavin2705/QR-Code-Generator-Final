@@ -107,12 +107,12 @@
                 <div class="card-content">
                     <div class="input-section">
                         <div class="input-wrapper">
-                            <textarea id="qrText" rows="4" maxlength="500"
+                            <textarea id="qrText" rows="4" maxlength="750"
                                 placeholder="Enter text or URL to generate QR code"></textarea>
                             <button class="generate-btn" id="generateBtn"><i class="fas fa-qrcode"></i>
                                 Generate</button>
                         </div>
-                        <div class="character-count" id="charCount">0/500 characters</div>
+                        <div class="character-count" id="charCount">0/750 characters</div>
                     </div>
                     <div class="input-section">
                         <div class="upload-area" id="qrImageUploadArea">
@@ -340,6 +340,29 @@
             <div class="custom-modal-footer">
                 <button class="custom-modal-btn cancel" id="customModalCancel">Cancel</button>
                 <button class="custom-modal-btn ok" id="customModalOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit QR Modal -->
+    <div class="custom-modal-overlay" id="editQrModal" style="display: none;">
+        <div class="custom-modal" style="min-width: 480px; max-width: 700px; width: 90vw; min-height: 320px;">
+            <div class="custom-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-pen-to-square" style="color: var(--primary-color);"></i>
+                    Edit QR Content
+                </span>
+                <button class="close-modal-btn" id="closeEditQrModal" style="background: var(--surface-elevated); border: 1px solid var(--border-color); border-radius: var(--radius); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; color: var(--text-secondary); transition: all 0.2s ease;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="custom-modal-body">
+                <textarea id="editQrText" rows="8" maxlength="750" placeholder="Edit QR content..." style="width: 100%; min-height: 180px; border-radius: var(--radius-lg); border: 2px solid var(--border-color); background: var(--surface-elevated); color: var(--text-primary); font-size: 1.1rem; padding: 20px 24px; margin-top: 10px; margin-bottom: 10px; resize: vertical; font-family: inherit;"></textarea>
+                <div class="character-count" id="editQrCharCount" style="text-align: right; color: var(--text-muted); font-size: 1rem; margin-top: 8px; margin-right: 0; letter-spacing: 0.01em;">0/750 characters</div>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="custom-modal-btn cancel" id="cancelEditQr">Cancel</button>
+                <button class="custom-modal-btn ok" id="saveEditQr">Save</button>
             </div>
         </div>
     </div>

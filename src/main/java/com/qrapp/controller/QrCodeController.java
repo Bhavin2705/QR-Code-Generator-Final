@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,15 +56,6 @@ public class QrCodeController {
 
     @Value("${server.port:8080}")
     private int serverPort;
-
-    // Helper method to extract user from Authorization header
-    private User getUserFromRequest(@RequestHeader(value = "Authorization", required = false) String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            return authService.getUserFromToken(token);
-        }
-        return null;
-    }
 
     // Helper method to extract user from HttpServletRequest
     private User getUserFromRequest(HttpServletRequest request) {
@@ -123,11 +113,11 @@ public class QrCodeController {
     @PostMapping("/generate")
     public ResponseEntity<Map<String, Object>> generateQrCode(
             @RequestBody Map<String, String> request,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+            HttpServletRequest httpRequest) {
         try {
-            User user = getUserFromRequest(authHeader);
+            User user = getUserFromRequest(httpRequest);
             if (user == null) {
-                return ResponseEntity.status(401).body(Map.of("error", "Authentication required"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
             }
 
             String inputText = request.get("text");
@@ -214,12 +204,12 @@ public class QrCodeController {
             map.put("type", code.getType());
             map.put("timestamp", code.getTimestamp());
             try {
+                // Always use the original inputText for QR image, so it matches what was generated
                 String qrCodeImage = qrCodeService.generateQrCodeImage(code.getInputText());
                 map.put("image", "data:image/png;base64," + qrCodeImage);
             } catch (Exception e) {
                 map.put("image", "");
-                System.err
-                        .println("Failed to generate QR image for history id " + code.getId() + ": " + e.getMessage());
+                System.err.println("Failed to generate QR image for history id " + code.getId() + ": " + e.getMessage());
             }
             result.add(map);
         }
@@ -234,7 +224,6 @@ public class QrCodeController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
             }
 
-            // Check if the QR code belongs to the authenticated user
             QrCode qrCode = qrCodeService.getQrCodeById(id);
             if (qrCode == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "QR Code not found"));
@@ -251,11 +240,36 @@ public class QrCodeController {
         }
     }
 
+    @PostMapping("/{id}/update")
+    public ResponseEntity<?> updateQrCodeText(@PathVariable Long id, @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+        User user = getUserFromRequest(httpRequest);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
+        }
+        QrCode qrCode = qrCodeService.getQrCodeById(id);
+        if (qrCode == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "QR Code not found"));
+        }
+        if (!qrCode.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "You do not have permission to edit this QR code."));
+        }
+        String newText = request.get("text");
+        if (newText == null || newText.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "QR content cannot be empty"));
+        }
+        if (newText.length() > 750) {
+            return ResponseEntity.badRequest().body(Map.of("error", "QR content exceeds 750 characters"));
+        }
+        qrCode.setInputText(newText);
+        qrCodeService.saveQrCode(qrCode);
+        return ResponseEntity.ok(Map.of("message", "QR updated successfully", "id", qrCode.getId(), "text", qrCode.getInputText()));
+    }
+
     @PostMapping(value = "/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> scanQrCode(@RequestParam("file") MultipartFile file,
             HttpServletRequest request) {
         try {
-            // Log request details for debugging
             System.out.println("Scan request received - File: " + (file != null ? file.getOriginalFilename() : "null") +
                     ", Size: " + (file != null ? file.getSize() : "null"));
 
