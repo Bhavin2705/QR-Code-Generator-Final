@@ -25,6 +25,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.qrapp.entity.QrCode;
+import com.qrapp.entity.User;
 import com.qrapp.repository.QrCodeRepository;
 import com.qrapp.storage.DocumentStorageService;
 import com.qrapp.storage.ImageStorageService;
@@ -56,11 +57,17 @@ public class QrCodeService {
     private QrCodeRepository qrCodeRepository;
 
     public QrCode saveQrCode(String inputText) {
-        return saveQrCode(inputText, "generated");
+        throw new IllegalStateException(
+                "QR codes must be associated with a user. Use saveQrCode(inputText, type, user) instead.");
     }
 
     public QrCode saveQrCode(String inputText, String type) {
-        QrCode qrCode = new QrCode(inputText, type);
+        throw new IllegalStateException(
+                "QR codes must be associated with a user. Use saveQrCode(inputText, type, user) instead.");
+    }
+
+    public QrCode saveQrCode(String inputText, String type, User user) {
+        QrCode qrCode = new QrCode(inputText, type, user);
         return qrCodeRepository.save(qrCode);
     }
 
@@ -68,8 +75,20 @@ public class QrCodeService {
         return qrCodeRepository.countByType(type);
     }
 
+    public long countByTypeAndUser(String type, User user) {
+        return qrCodeRepository.countByUserAndType(user, type);
+    }
+
+    public long countByUserAndType(User user, String type) {
+        return qrCodeRepository.countByUserAndType(user, type);
+    }
+
     public List<QrCode> getAllQrCodes() {
         return qrCodeRepository.findAllByOrderByTimestampDesc();
+    }
+
+    public List<QrCode> getQrCodesByUser(User user) {
+        return qrCodeRepository.findByUserOrderByTimestampDesc(user);
     }
 
     public void deleteQrCode(Long id) {
@@ -111,13 +130,19 @@ public class QrCodeService {
     }
 
     public Map<String, Object> generateQrCodeFromImageFile(MultipartFile file) throws IOException, WriterException {
+        throw new IllegalStateException(
+                "QR codes must be associated with a user. Use generateQrCodeFromImageFile(file, user) instead.");
+    }
+
+    public Map<String, Object> generateQrCodeFromImageFile(MultipartFile file, User user)
+            throws IOException, WriterException {
         if (file == null || file.isEmpty())
             throw new IOException("No file uploaded");
         String filename = imageStorageService.storeImage(file);
         String host = getNetworkHost();
         String portSuffix = (serverPort == 80 || serverPort == 443) ? "" : ":" + serverPort;
         String imageUrl = serverScheme + "://" + host + portSuffix + "/api/qr/image/" + filename;
-        QrCode saved = saveQrCode(imageUrl, "generated");
+        QrCode saved = saveQrCode(imageUrl, "generated", user);
         String qrCodeImage = generateQrCodeImage(imageUrl);
         Map<String, Object> response = new HashMap<>();
         response.put("id", saved.getId());
@@ -129,6 +154,12 @@ public class QrCodeService {
     }
 
     public Map<String, Object> generateQrCodeForDocument(MultipartFile file) throws IOException, WriterException {
+        throw new IllegalStateException(
+                "QR codes must be associated with a user. Use generateQrCodeForDocument(file, user) instead.");
+    }
+
+    public Map<String, Object> generateQrCodeForDocument(MultipartFile file, User user)
+            throws IOException, WriterException {
         if (file == null || file.isEmpty())
             throw new IOException("No file uploaded");
         if (file.getSize() > 50L * 1024L * 1024L) {
@@ -138,7 +169,7 @@ public class QrCodeService {
         String host = getNetworkHost();
         String portSuffix = (serverPort == 80 || serverPort == 443) ? "" : ":" + serverPort;
         String docUrl = serverScheme + "://" + host + portSuffix + "/api/qr/doc/" + filename;
-        QrCode saved = saveQrCode(docUrl, "generated");
+        QrCode saved = saveQrCode(docUrl, "generated", user);
         String qrCodeImage = generateQrCodeImage(docUrl);
         Map<String, Object> response = new HashMap<>();
         response.put("id", saved.getId());
@@ -151,7 +182,7 @@ public class QrCodeService {
 
     public String getNetworkHost() {
         if (!serverHostname.isEmpty()) {
-            return serverHostname; 
+            return serverHostname;
         }
         String fallback192 = null;
         try {
@@ -189,16 +220,12 @@ public class QrCodeService {
                 "No suitable network address found. Please configure server.hostname for public access.");
     }
 
-    private String getFileExtension(String filename) {
-        if (filename == null)
-            return "png";
-        int dot = filename.lastIndexOf('.');
-        if (dot == -1)
-            return "png";
-        return filename.substring(dot + 1);
+    public Map<String, Object> scanQrCodeFromImage(MultipartFile file) throws IOException {
+        throw new IllegalStateException(
+                "QR codes must be associated with a user. Use scanQrCodeFromImage(file, user) instead.");
     }
 
-    public Map<String, Object> scanQrCodeFromImage(MultipartFile file) throws IOException {
+    public Map<String, Object> scanQrCodeFromImage(MultipartFile file, User user) throws IOException {
         if (file == null || file.isEmpty())
             throw new IOException("No file uploaded");
         BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
@@ -209,7 +236,7 @@ public class QrCodeService {
         try {
             Result result = new MultiFormatReader().decode(bitmap);
             String text = result.getText();
-            QrCode saved = saveQrCode(text, "scanned");
+            QrCode saved = saveQrCode(text, "scanned", user);
             Map<String, Object> response = new HashMap<>();
             response.put("id", saved.getId());
             response.put("text", text);
@@ -217,7 +244,7 @@ public class QrCodeService {
             response.put("type", saved.getType());
             return response;
         } catch (Exception e) {
-            throw new IOException("No QR code found in image");
+            throw new IOException("QR code not readable");
         }
     }
 

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -116,15 +117,15 @@ public class AuthController {
     }
 
     @PostMapping("/profile")
-    public ResponseEntity<Map<String, Object>> getUserProfile(@RequestBody Map<String, String> request) {
-        String token = request.get("token");
-
-        if (token == null || token.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
+    public ResponseEntity<Map<String, Object>> getUserProfile(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of(
                     "success", false,
-                    "message", "Token is required"));
+                    "message", "Authorization token is required"));
         }
 
+        String token = authHeader.substring(7);
         Map<String, Object> result = authService.getUserProfile(token);
 
         if ((Boolean) result.get("success")) {
@@ -135,25 +136,36 @@ public class AuthController {
     }
 
     @PostMapping("/profile/update")
-    public ResponseEntity<Map<String, Object>> updateProfile(@RequestBody Map<String, String> request) {
-        String token = request.get("token");
+    public ResponseEntity<Map<String, Object>> updateProfile(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody Map<String, String> request) {
+
+        System.out.println("Profile update request received");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("Missing or invalid Authorization header");
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Authorization token is required"));
+        }
+
+        String token = authHeader.substring(7);
         String username = request.get("username");
         String email = request.get("email");
         String newPassword = request.get("newPassword");
 
-        if (token == null || token.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Token is required"));
-        }
+        System.out.println("Update request - Username: " + username + ", Email: " + email +
+                ", Has new password: " + (newPassword != null && !newPassword.isEmpty()));
 
         if (email != null && !email.trim().isEmpty() && !isValidEmail(email)) {
+            System.out.println("Invalid email format: " + email);
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Please enter a valid email address"));
         }
 
         Map<String, Object> result = authService.updateProfile(token, username, email, newPassword);
+        System.out.println("Update result: " + result.get("success") + " - " + result.get("message"));
 
         if ((Boolean) result.get("success")) {
             return ResponseEntity.ok(result);

@@ -54,10 +54,6 @@
                                     <i class="fas fa-user-edit"></i>
                                     <span>Edit Profile</span>
                                 </a>
-                                <a href="#" class="dropdown-item" id="accountSettings">
-                                    <i class="fas fa-cog"></i>
-                                    <span>Account Settings</span>
-                                </a>
                                 <div class="dropdown-divider"></div>
                                 <a href="#" class="dropdown-item logout-item" id="logoutBtn">
                                     <i class="fas fa-sign-out-alt"></i>
@@ -66,8 +62,10 @@
                             </div>
                         </div>
                     </div>
-                    <button id="authBtn" class="auth-btn"
-                        style="margin-right: 10px; padding: 8px 16px; background: var(--gradient-primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">Login</button>
+                    <button id="authBtn" class="auth-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login
+                    </button>
                     <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
                 </div>
             </div>
@@ -97,7 +95,7 @@
             </div>
         </section>
 
-        <section class="action-cards">
+        <section class="action-cards" id="mainContent">
             <div class="action-card">
                 <div class="card-header">
                     <div class="card-icon"><i class="fas fa-qrcode"></i></div>
@@ -179,7 +177,7 @@
             </div>
         </section>
 
-        <section class="history-section">
+        <section class="history-section" id="historySection">
             <div class="section-header">
                 <h2><i class="fas fa-history"></i> Recent Activity</h2>
                 <button class="clear-history-btn" id="clearHistoryBtn"><i class="fas fa-trash"></i> Clear All</button>
@@ -192,6 +190,19 @@
                         <p>Generated or scanned QR codes will appear here</p>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section id="loginPromptSection" style="display:none; text-align:center; margin: 40px 0;">
+            <div
+                style="padding: 40px; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+                <i class="fas fa-lock fa-3x" style="color: var(--primary-color);"></i>
+                <h2 style="margin-top: 20px;">Log in to see your QRs</h2>
+                <p>You must be logged in to generate, scan, or view your QR codes and history.</p>
+                <button id="goToLoginBtn" class="auth-btn" style="margin-top: 20px;">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </button>
             </div>
         </section>
     </div>
@@ -209,7 +220,15 @@
     <div class="edit-profile-modal-overlay" id="editProfileModal" style="display: none;">
         <div class="edit-profile-modal">
             <div class="edit-profile-modal-header">
-                <h3><i class="fas fa-user-edit"></i> Edit Profile</h3>
+                <div class="modal-title-section">
+                    <div class="modal-icon">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <div>
+                        <h3>Edit Profile</h3>
+                        <p>Update your account information</p>
+                    </div>
+                </div>
                 <button class="close-modal-btn" id="closeEditProfileModal">
                     <i class="fas fa-times"></i>
                 </button>
@@ -217,60 +236,98 @@
             <div class="edit-profile-modal-body">
                 <form id="editProfileForm">
                     <div class="profile-form-section">
-                        <h4><i class="fas fa-user"></i> Basic Information</h4>
-                        <div class="form-group">
-                            <label for="editUsername">Username</label>
-                            <input type="text" id="editUsername" placeholder="Enter username" required>
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <h4>Basic Information</h4>
                         </div>
-                        <div class="form-group">
-                            <label for="editEmail">Email</label>
-                            <input type="email" id="editEmail" placeholder="Enter email" required>
-                            <div class="email-validation-feedback" id="emailValidationFeedback"></div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editUsername">
+                                    <i class="fas fa-user"></i>
+                                    Username
+                                </label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="editUsername" placeholder="Enter username" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="editEmail">
+                                    <i class="fas fa-envelope"></i>
+                                    Email Address
+                                </label>
+                                <div class="input-wrapper">
+                                    <input type="email" id="editEmail" placeholder="Enter email address" required>
+                                </div>
+                                <div class="email-validation-feedback" id="emailValidationFeedback"></div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="profile-form-section">
-                        <h4><i class="fas fa-lock"></i> Change Password (Optional)</h4>
-                        <div class="form-group">
-                            <label for="newPassword">New Password</label>
-                            <div class="password-input-wrapper">
-                                <input type="password" id="newPassword"
-                                    placeholder="Enter new password (min 6 characters)">
-                                <button type="button" class="password-toggle-btn" id="toggleNewPassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-lock"></i>
                             </div>
+                            <h4>Security Settings</h4>
+                            <span class="optional-badge">Optional</span>
                         </div>
-                        <div class="form-group">
-                            <label for="confirmNewPassword">Confirm New Password</label>
-                            <div class="password-input-wrapper">
-                                <input type="password" id="confirmNewPassword" placeholder="Confirm new password">
-                                <button type="button" class="password-toggle-btn" id="toggleConfirmPassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newPassword">
+                                    <i class="fas fa-key"></i>
+                                    New Password
+                                </label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="newPassword"
+                                        placeholder="Enter new password (min 6 characters)">
+                                    <button type="button" class="password-toggle-btn" id="toggleNewPassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmNewPassword">
+                                    <i class="fas fa-check-circle"></i>
+                                    Confirm Password
+                                </label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="confirmNewPassword" placeholder="Confirm new password">
+                                    <button type="button" class="password-toggle-btn" id="toggleConfirmPassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="password-requirements" id="passwordRequirements" style="display: none;">
-                            <div class="requirement" id="lengthReq">
-                                <i class="fas fa-times"></i>
-                                <span>At least 6 characters</span>
-                            </div>
-                            <div class="requirement" id="letterReq">
-                                <i class="fas fa-times"></i>
-                                <span>At least one letter</span>
-                            </div>
-                            <div class="requirement" id="numberReq">
-                                <i class="fas fa-times"></i>
-                                <span>At least one number</span>
+                            <h5>Password Requirements</h5>
+                            <div class="requirements-list">
+                                <div class="requirement" id="lengthReq">
+                                    <i class="fas fa-times"></i>
+                                    <span>At least 6 characters</span>
+                                </div>
+                                <div class="requirement" id="letterReq">
+                                    <i class="fas fa-times"></i>
+                                    <span>At least one letter</span>
+                                </div>
+                                <div class="requirement" id="numberReq">
+                                    <i class="fas fa-times"></i>
+                                    <span>At least one number</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="edit-profile-modal-footer">
-                <button type="button" class="btn-secondary" id="cancelEditProfile">Cancel</button>
+                <button type="button" class="btn-secondary" id="cancelEditProfile">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
                 <button type="button" class="btn-primary" id="saveProfileChanges">
-                    <i class="fas fa-save"></i> Save Changes
+                    <i class="fas fa-save"></i>
+                    Save Changes
                 </button>
             </div>
         </div>

@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 
 import com.qrapp.entity.QrCode;
+import com.qrapp.entity.User;
 import com.qrapp.repository.QrCodeRepository;
 import com.qrapp.storage.DocumentStorageService;
 import com.qrapp.storage.ImageStorageService;
@@ -31,9 +32,15 @@ public class QrCodeServiceTest {
     private ImageStorageService imageStorageService;
     private DocumentStorageService documentStorageService;
     private QrCodeRepository qrCodeRepository;
+    private User testUser;
 
     @BeforeEach
     void setup() throws Exception {
+        // Create a test user
+        testUser = new User();
+        testUser.setId(1L);
+        testUser.setUsername("testuser");
+        testUser.setEmail("test@example.com");
         qrCodeService = new QrCodeService();
         imageStorageService = new ImageStorageService() {
             @Override
@@ -96,7 +103,7 @@ public class QrCodeServiceTest {
             return q;
         });
 
-        QrCode out = qrCodeService.saveQrCode("hello world", "generated");
+        QrCode out = qrCodeService.saveQrCode("hello world", "generated", testUser);
         assertNotNull(out);
         assertEquals(42L, out.getId());
 
@@ -104,6 +111,7 @@ public class QrCodeServiceTest {
         verify(qrCodeRepository).save(cap.capture());
         assertEquals("hello world", cap.getValue().getInputText());
         assertEquals("generated", cap.getValue().getType());
+        assertEquals(testUser, cap.getValue().getUser());
     }
 
     @Test
@@ -129,7 +137,7 @@ public class QrCodeServiceTest {
         });
 
         MultipartFile mf = new TestMultipartFile("image/png", "file.png", new byte[] { 1, 2, 3, 4 });
-        Map<String, Object> res = qrCodeService.generateQrCodeFromImageFile(mf);
+        Map<String, Object> res = qrCodeService.generateQrCodeFromImageFile(mf, testUser);
         assertNotNull(res);
         assertEquals(5L, ((Number) res.get("id")).longValue());
         String text = (String) res.get("text");
@@ -153,7 +161,7 @@ public class QrCodeServiceTest {
 
         @Override
         public String getName() {
-            return originalFilename == null ? "file" : originalFilename;
+            return originalFilename != null ? originalFilename : "file";
         }
 
         @Override
@@ -173,22 +181,24 @@ public class QrCodeServiceTest {
 
         @Override
         public long getSize() {
-            return content == null ? 0 : content.length;
+            return content != null ? content.length : 0;
         }
 
         @Override
         public byte[] getBytes() throws IOException {
-            return content == null ? new byte[0] : content;
+            return content != null ? content : new byte[0];
         }
 
         @Override
         public InputStream getInputStream() throws IOException {
-            return new ByteArrayInputStream(content == null ? new byte[0] : content);
+            return new ByteArrayInputStream(content != null ? content : new byte[0]);
         }
 
         @Override
         public void transferTo(java.io.File dest) throws IOException, IllegalStateException {
-            byte[] toWrite = content == null ? new byte[0] : content;
+            if (dest == null)
+                throw new IllegalArgumentException("Destination file cannot be null");
+            byte[] toWrite = content != null ? content : new byte[0];
             java.nio.file.Files.write(dest.toPath(), toWrite);
         }
     }

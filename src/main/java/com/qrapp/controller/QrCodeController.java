@@ -1,11 +1,14 @@
 package com.qrapp.controller;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.qrapp.entity.QrCode;
+import com.qrapp.entity.User;
+import com.qrapp.service.AuthService;
 import com.qrapp.service.QrCodeService;
 import com.qrapp.storage.DocumentStorageService;
 import com.qrapp.storage.ImageStorageService;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,10 +27,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/qr")
@@ -42,11 +49,33 @@ public class QrCodeController {
     @Autowired
     private QrCodeService qrCodeService;
 
+    @Autowired
+    private AuthService authService;
+
     @Value("${server.scheme:http}")
     private String serverScheme;
 
     @Value("${server.port:8080}")
     private int serverPort;
+
+    // Helper method to extract user from Authorization header
+    private User getUserFromRequest(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            return authService.getUserFromToken(token);
+        }
+        return null;
+    }
+
+    // Helper method to extract user from HttpServletRequest
+    private User getUserFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            return authService.getUserFromToken(token);
+        }
+        return null;
+    }
 
     @GetMapping("/image/{filename}")
     public ResponseEntity<Resource> serveImage(@PathVariable String filename) {
@@ -92,11 +121,18 @@ public class QrCodeController {
     }
 
     @PostMapping("/generate")
-    public ResponseEntity<Map<String, Object>> generateQrCode(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> generateQrCode(
+            @RequestBody Map<String, String> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
+            User user = getUserFromRequest(authHeader);
+            if (user == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "Authentication required"));
+            }
+
             String inputText = request.get("text");
             String type = request.getOrDefault("type", "generated");
-            QrCode savedQrCode = qrCodeService.saveQrCode(inputText, type);
+            QrCode savedQrCode = qrCodeService.saveQrCode(inputText, type, user);
 
             String host = qrCodeService.getNetworkHost();
             String portSuffix = (serverPort == 80 || serverPort == 443) ? "" : ":" + serverPort;
@@ -118,9 +154,15 @@ public class QrCodeController {
     }
 
     @PostMapping(value = "/generate-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Map<String, Object>> generateQrFromImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> generateQrFromImage(@RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
         try {
-            Map<String, Object> result = qrCodeService.generateQrCodeFromImageFile(file);
+            User user = getUserFromRequest(request);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
+            }
+
+            Map<String, Object> result = qrCodeService.generateQrCodeFromImageFile(file, user);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -128,9 +170,15 @@ public class QrCodeController {
     }
 
     @PostMapping(value = "/upload-doc", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Map<String, Object>> uploadDocument(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> uploadDocument(@RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
         try {
-            Map<String, Object> result = qrCodeService.generateQrCodeForDocument(file);
+            User user = getUserFromRequest(request);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
+            }
+
+            Map<String, Object> result = qrCodeService.generateQrCodeForDocument(file, user);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -138,16 +186,26 @@ public class QrCodeController {
     }
 
     @GetMapping("/stats")
-    public ResponseEntity<Map<String, Long>> getStats() {
+    public ResponseEntity<Map<String, Long>> getStats(HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         Map<String, Long> stats = new HashMap<>();
-        stats.put("generated", qrCodeService.countByType("generated"));
-        stats.put("scanned", qrCodeService.countByType("scanned"));
+        stats.put("generated", qrCodeService.countByTypeAndUser("generated", user));
+        stats.put("scanned", qrCodeService.countByTypeAndUser("scanned", user));
         return ResponseEntity.ok(stats);
     }
 
     @GetMapping("/history")
-    public ResponseEntity<List<Map<String, Object>>> getQrCodeHistory() {
-        List<QrCode> codes = qrCodeService.getAllQrCodes();
+    public ResponseEntity<List<Map<String, Object>>> getQrCodeHistory(HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<QrCode> codes = qrCodeService.getQrCodesByUser(user);
         List<Map<String, Object>> result = new java.util.ArrayList<>();
         for (QrCode code : codes) {
             Map<String, Object> map = new HashMap<>();
@@ -169,17 +227,60 @@ public class QrCodeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteQrCode(@PathVariable Long id) {
-        qrCodeService.deleteQrCode(id);
-        return ResponseEntity.ok(Map.of("message", "QR Code deleted successfully"));
+    public ResponseEntity<Map<String, String>> deleteQrCode(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            User user = getUserFromRequest(request);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
+            }
+
+            // Check if the QR code belongs to the authenticated user
+            QrCode qrCode = qrCodeService.getQrCodeById(id);
+            if (qrCode == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "QR Code not found"));
+            }
+
+            if (!qrCode.getUser().getId().equals(user.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access denied"));
+            }
+
+            qrCodeService.deleteQrCode(id);
+            return ResponseEntity.ok(Map.of("message", "QR Code deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping(value = "/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Map<String, Object>> scanQrCode(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> scanQrCode(@RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
         try {
-            Map<String, Object> result = qrCodeService.scanQrCodeFromImage(file);
+            // Log request details for debugging
+            System.out.println("Scan request received - File: " + (file != null ? file.getOriginalFilename() : "null") +
+                    ", Size: " + (file != null ? file.getSize() : "null"));
+
+            User user = getUserFromRequest(request);
+            if (user == null) {
+                System.out.println("Authentication failed for scan request");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
+            }
+
+            System.out.println("User authenticated: " + user.getUsername());
+
+            if (file == null || file.isEmpty()) {
+                System.out.println("File is null or empty");
+                return ResponseEntity.badRequest().body(Map.of("error", "No file uploaded"));
+            }
+
+            Map<String, Object> result = qrCodeService.scanQrCodeFromImage(file, user);
+            System.out.println("Scan successful");
             return ResponseEntity.ok(result);
+        } catch (IOException e) {
+            System.out.println("IOException during scan: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
+            System.out.println("Exception during scan: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }

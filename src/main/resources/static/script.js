@@ -34,6 +34,25 @@ let stats = {
     lastActivity: null
 };
 
+// Helper function for authenticated API calls
+function getAuthHeaders() {
+    const token = localStorage.getItem('authToken');
+    return token ? {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    } : {
+        'Content-Type': 'application/json'
+    };
+}
+
+// Helper function for authenticated fetch with FormData
+function getAuthHeadersForFormData() {
+    const token = localStorage.getItem('authToken');
+    return token ? {
+        'Authorization': `Bearer ${token}`
+    } : {};
+}
+
 // Initialize localStorage for history if not already set
 function initializeLocalStorage() {
     if (!localStorage.getItem('qrHistory')) {
@@ -121,7 +140,7 @@ async function generateQR() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/qr/generate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ text })
         });
         const data = await response.json();
@@ -166,6 +185,7 @@ async function generateQRFromImage(file) {
         formData.append('file', file);
         const response = await fetch(`${API_BASE_URL}/api/qr/generate-image`, {
             method: 'POST',
+            headers: getAuthHeadersForFormData(),
             body: formData
         });
         const data = await response.json();
@@ -236,18 +256,19 @@ async function handleImageUpload(file) {
         formData.append('file', file);
         const response = await fetch(`${API_BASE_URL}/api/qr/scan`, {
             method: 'POST',
+            headers: getAuthHeadersForFormData(),
             body: formData
         });
         const data = await response.json();
-        if (!response.ok || data.error) throw new Error(data.error || 'No QR code found in image');
+        if (!response.ok || data.error) throw new Error(data.error || 'QR code not readable');
 
         displayScanResult(data.text);
         await loadHistory();
         await loadStats();
         showToast('QR code detected successfully!', 'success');
     } catch (error) {
-        showError(scanResult, 'No QR code found in the image');
-        showToast('No QR code found in image', 'warning');
+        showError(scanResult, 'QR code not readable');
+        showToast('QR code not readable', 'warning');
     } finally {
         hideLoading();
     }
@@ -322,7 +343,9 @@ function handleImageDrop(e) {
 // Load history from backend
 async function loadHistory() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/qr/history`);
+        const response = await fetch(`${API_BASE_URL}/api/qr/history`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch history'}`);
@@ -385,7 +408,10 @@ async function deleteQR(id) {
         okClass: 'ok',
         onOk: async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/qr/${id}`, { method: 'DELETE' });
+                const response = await fetch(`${API_BASE_URL}/api/qr/${id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
                 const data = await response.json();
                 if (!response.ok || data.error) throw new Error(data.error || 'Failed to delete QR code');
                 await loadHistory();
@@ -406,10 +432,15 @@ async function clearAllHistory() {
         okClass: 'ok',
         onOk: async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/qr/history`);
+                const response = await fetch(`${API_BASE_URL}/api/qr/history`, {
+                    headers: getAuthHeaders()
+                });
                 const history = await response.json();
                 for (const item of history) {
-                    await fetch(`${API_BASE_URL}/api/qr/${item.id}`, { method: 'DELETE' });
+                    await fetch(`${API_BASE_URL}/api/qr/${item.id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
                 }
                 await loadHistory();
                 await loadStats();
@@ -509,13 +540,17 @@ function formatDate(dateString) {
 // Stats management (Backend)
 async function loadStats() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/qr/stats`);
+        const response = await fetch(`${API_BASE_URL}/api/qr/stats`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) throw new Error('Failed to fetch stats');
         const statsData = await response.json();
         stats.totalGenerated = statsData.generated || 0;
         stats.totalScanned = statsData.scanned || 0;
         // Get last activity from history
-        const historyResp = await fetch(`${API_BASE_URL}/api/qr/history`);
+        const historyResp = await fetch(`${API_BASE_URL}/api/qr/history`, {
+            headers: getAuthHeaders()
+        });
         if (!historyResp.ok) throw new Error('Failed to fetch history for stats');
         const history = await historyResp.json();
         if (Array.isArray(history) && history.length > 0) {
@@ -600,7 +635,7 @@ async function checkAuthStatus() {
         authBtn.style.display = 'block';
         authBtn.textContent = 'Login';
         authBtn.onclick = () => window.location.href = 'login.html';
-        return;
+        return false;
     }
 
     try {
@@ -609,8 +644,8 @@ async function checkAuthStatus() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token })
+                'Authorization': `Bearer ${token}`
+            }
         });
 
         const data = await response.json();
@@ -625,6 +660,7 @@ async function checkAuthStatus() {
 
             // Initialize profile dropdown functionality
             initializeProfileDropdown();
+            return true;
         } else {
             // Token is invalid, remove it and show login
             localStorage.removeItem('authToken');
@@ -632,6 +668,7 @@ async function checkAuthStatus() {
             authBtn.style.display = 'block';
             authBtn.textContent = 'Login';
             authBtn.onclick = () => window.location.href = 'login.html';
+            return false;
         }
     } catch (error) {
         console.error('Error checking auth status:', error);
@@ -641,13 +678,13 @@ async function checkAuthStatus() {
         authBtn.style.display = 'block';
         authBtn.textContent = 'Login';
         authBtn.onclick = () => window.location.href = 'login.html';
+        return false;
     }
 } function initializeProfileDropdown() {
     const profileBtn = document.getElementById('profileBtn');
     const profileDropdown = document.getElementById('profileDropdown');
     const logoutBtn = document.getElementById('logoutBtn');
     const editProfile = document.getElementById('editProfile');
-    const accountSettings = document.getElementById('accountSettings');
 
     // Ensure dropdown visibility properties
     ensureDropdownVisibility();
@@ -686,13 +723,6 @@ async function checkAuthStatus() {
             return;
         }
         openEditProfileModal();
-    });
-
-    accountSettings.addEventListener('click', (e) => {
-        e.preventDefault();
-        showToast('Account settings coming soon', 'info');
-        profileDropdown.classList.remove('show');
-        profileBtn.classList.remove('active');
     });
 }
 
@@ -745,14 +775,27 @@ function attachEventListeners() {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    checkAuthStatus();
-    attachEventListeners();
-    loadHistory();
-    loadStats();
-    initializeTheme();
-
-    // Additional call to ensure dropdown visibility
-    setTimeout(ensureDropdownVisibility, 100);
+    checkAuthStatus().then(isAuthenticated => {
+        const mainContent = document.getElementById('mainContent');
+        const historySection = document.getElementById('historySection');
+        const loginPromptSection = document.getElementById('loginPromptSection');
+        const goToLoginBtn = document.getElementById('goToLoginBtn');
+        if (!isAuthenticated) {
+            if (mainContent) mainContent.style.display = 'none';
+            if (historySection) historySection.style.display = 'none';
+            if (loginPromptSection) loginPromptSection.style.display = 'block';
+            if (goToLoginBtn) goToLoginBtn.onclick = () => window.location.href = 'login.html';
+        } else {
+            if (mainContent) mainContent.style.display = '';
+            if (historySection) historySection.style.display = '';
+            if (loginPromptSection) loginPromptSection.style.display = 'none';
+            attachEventListeners();
+            loadHistory();
+            loadStats();
+        }
+        initializeTheme();
+        setTimeout(ensureDropdownVisibility, 100);
+    });
 });
 
 // Upload document and generate QR
@@ -770,7 +813,11 @@ async function uploadDocument(file) {
     try {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await fetch(`${API_BASE_URL}/api/qr/upload-doc`, { method: 'POST', body: formData });
+        const response = await fetch(`${API_BASE_URL}/api/qr/upload-doc`, {
+            method: 'POST',
+            headers: getAuthHeadersForFormData(),
+            body: formData
+        });
         const data = await response.json();
         if (!response.ok || data.error) throw new Error(data.error || 'Failed to upload document');
         const historyItem = {
@@ -804,44 +851,32 @@ const saveProfileChanges = document.getElementById('saveProfileChanges');
 const cancelEditProfile = document.getElementById('cancelEditProfile');
 const closeEditProfileModal = document.getElementById('closeEditProfileModal');
 // currentPassword removed by design
-const toggleCurrentPassword = null;
 const toggleNewPassword = document.getElementById('toggleNewPassword');
 const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
 
 let profileToken = localStorage.getItem('authToken') || null;
 
 // Open modal when Edit Profile clicked
-document.addEventListener('click', async (e) => {
-    if (e.target.closest('#editProfile') || e.target.id === 'editProfile') {
-        if (!profileToken) {
-            showToast('Please log in to edit your profile', 'error');
-            return;
-        }
-        await openEditProfileModal();
-    }
-});
 
 async function openEditProfileModal() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: profileToken })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch profile');
+    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${profileToken}`
+        }
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch profile');
 
-        editUsername.value = data.username || '';
-        editEmail.value = data.email || '';
-        emailValidationFeedback.textContent = '';
-        // currentPassword removed from modal
-        newPassword.value = '';
-        confirmNewPassword.value = '';
+    editUsername.value = data.username || '';
+    editEmail.value = data.email || '';
+    emailValidationFeedback.textContent = '';
+    // currentPassword removed from modal
+    newPassword.value = '';
+    confirmNewPassword.value = '';
 
-        editProfileModal.style.display = 'flex';
-    } catch (err) {
-        showToast(err.message || 'Error fetching profile', 'error');
-    }
+    editProfileModal.style.display = 'flex';
 }
 
 function closeEditModal() {
@@ -869,6 +904,152 @@ function togglePasswordField(field, btn) {
         icon.classList.add('fa-eye');
     }
 }
+
+// Enhanced password validation and UX
+function initializeProfileModalEnhancements() {
+    const newPasswordField = document.getElementById('newPassword');
+    const confirmPasswordField = document.getElementById('confirmNewPassword');
+    const passwordRequirements = document.getElementById('passwordRequirements');
+    const lengthReq = document.getElementById('lengthReq');
+    const letterReq = document.getElementById('letterReq');
+    const numberReq = document.getElementById('numberReq');
+
+    if (!newPasswordField || !passwordRequirements) return;
+
+    // Show/hide password requirements based on password field focus
+    newPasswordField.addEventListener('focus', () => {
+        passwordRequirements.style.display = 'block';
+    });
+
+    newPasswordField.addEventListener('blur', () => {
+        if (!newPasswordField.value) {
+            passwordRequirements.style.display = 'none';
+        }
+    });
+
+    // Real-time password validation
+    newPasswordField.addEventListener('input', () => {
+        const password = newPasswordField.value;
+
+        if (password.length === 0) {
+            passwordRequirements.style.display = 'none';
+            return;
+        }
+
+        passwordRequirements.style.display = 'block';
+
+        // Length requirement
+        if (lengthReq) {
+            if (password.length >= 6) {
+                lengthReq.classList.add('valid');
+                lengthReq.querySelector('i').className = 'fas fa-check';
+            } else {
+                lengthReq.classList.remove('valid');
+                lengthReq.querySelector('i').className = 'fas fa-times';
+            }
+        }
+
+        // Letter requirement
+        if (letterReq) {
+            if (/[a-zA-Z]/.test(password)) {
+                letterReq.classList.add('valid');
+                letterReq.querySelector('i').className = 'fas fa-check';
+            } else {
+                letterReq.classList.remove('valid');
+                letterReq.querySelector('i').className = 'fas fa-times';
+            }
+        }
+
+        // Number requirement
+        if (numberReq) {
+            if (/[0-9]/.test(password)) {
+                numberReq.classList.add('valid');
+                numberReq.querySelector('i').className = 'fas fa-check';
+            } else {
+                numberReq.classList.remove('valid');
+                numberReq.querySelector('i').className = 'fas fa-times';
+            }
+        }
+
+        // Validate confirm password if it has a value
+        if (confirmPasswordField && confirmPasswordField.value) {
+            validatePasswordMatch();
+        }
+    });
+
+    // Confirm password validation
+    if (confirmPasswordField) {
+        confirmPasswordField.addEventListener('input', validatePasswordMatch);
+    }
+
+    function validatePasswordMatch() {
+        if (!newPasswordField || !confirmPasswordField) return;
+
+        const password = newPasswordField.value;
+        const confirmPassword = confirmPasswordField.value;
+
+        if (confirmPassword && password !== confirmPassword) {
+            confirmPasswordField.style.borderColor = '#ef4444';
+            confirmPasswordField.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+        } else if (confirmPassword) {
+            confirmPasswordField.style.borderColor = 'var(--primary-color)';
+            confirmPasswordField.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.1)';
+        } else {
+            confirmPasswordField.style.borderColor = 'var(--border-color)';
+            confirmPasswordField.style.boxShadow = 'none';
+        }
+    }
+}
+
+// Email validation enhancement
+function initializeEmailValidation() {
+    const emailField = document.getElementById('editEmail');
+    const feedback = document.getElementById('emailValidationFeedback');
+
+    if (!emailField || !feedback) return;
+
+    let debounceTimer;
+
+    emailField.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const email = emailField.value.trim();
+
+        if (!email) {
+            feedback.style.display = 'none';
+            emailField.style.borderColor = 'var(--border-color)';
+            return;
+        }
+
+        debounceTimer = setTimeout(() => {
+            validateEmailFormat(email);
+        }, 500);
+    });
+
+    function validateEmailFormat(email) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        if (emailRegex.test(email)) {
+            feedback.textContent = '✓ Valid email format';
+            feedback.className = 'email-validation-feedback success';
+            emailField.style.borderColor = 'var(--primary-color)';
+        } else {
+            feedback.textContent = '✗ Please enter a valid email address';
+            feedback.className = 'email-validation-feedback error';
+            emailField.style.borderColor = '#ef4444';
+        }
+        feedback.style.display = 'block';
+    }
+}
+
+// Initialize enhancements when modal opens
+const originalOpenEditProfileModal = openEditProfileModal;
+window.openEditProfileModal = async function () {
+    await originalOpenEditProfileModal();
+    setTimeout(() => {
+        initializeProfileModalEnhancements();
+        initializeEmailValidation();
+    }, 100);
+};
 
 // Email format + availability check
 let emailCheckTimeoutEdit;
@@ -930,8 +1111,11 @@ saveProfileChanges.addEventListener('click', async () => {
 
         const resp = await fetch('/api/auth/profile/update', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: profileToken, username: usernameVal, email: emailVal, newPassword: newPass })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${profileToken}`
+            },
+            body: JSON.stringify({ username: usernameVal, email: emailVal, newPassword: newPass })
         });
         const json = await resp.json();
         if (!resp.ok || !json.success) throw new Error(json.message || 'Failed to update profile');

@@ -4,9 +4,12 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -24,6 +27,10 @@ public class QrCode {
 
     private LocalDateTime timestamp;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     public QrCode() {
         this.timestamp = LocalDateTime.now();
     }
@@ -31,6 +38,13 @@ public class QrCode {
     public QrCode(String inputText, String type) {
         this.inputText = inputText;
         this.type = type;
+        this.timestamp = LocalDateTime.now();
+    }
+
+    public QrCode(String inputText, String type, User user) {
+        this.inputText = inputText;
+        this.type = type;
+        this.user = user;
         this.timestamp = LocalDateTime.now();
     }
 
@@ -68,5 +82,13 @@ public class QrCode {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

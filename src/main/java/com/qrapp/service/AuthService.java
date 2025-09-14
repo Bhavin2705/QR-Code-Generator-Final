@@ -73,7 +73,7 @@ public class AuthService {
             return response;
         }
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getUsername());
 
         response.put("success", true);
         response.put("message", "Login successful");
@@ -85,14 +85,14 @@ public class AuthService {
 
     public boolean validateToken(String token) {
         try {
-            String email = jwtUtil.extractUsername(token);
-            return jwtUtil.validateToken(token, email);
+            String username = jwtUtil.extractUsername(token);
+            return jwtUtil.validateToken(token, username);
         } catch (Exception e) {
             return false;
         }
     }
 
-    public String getEmailFromToken(String token) {
+    public String getUsernameFromToken(String token) {
         try {
             return jwtUtil.extractUsername(token);
         } catch (Exception e) {
@@ -100,11 +100,10 @@ public class AuthService {
         }
     }
 
-    public String getUsernameFromToken(String token) {
+    public User getUserFromToken(String token) {
         try {
-            String email = jwtUtil.extractUsername(token);
-            Optional<User> userOptional = userRepository.findByEmail(email);
-            return userOptional.map(User::getUsername).orElse(null);
+            String username = jwtUtil.extractUsername(token);
+            return userRepository.findByUsername(username).orElse(null);
         } catch (Exception e) {
             return null;
         }
@@ -120,21 +119,12 @@ public class AuthService {
                 return response;
             }
 
-            String email = getEmailFromToken(token);
-            if (email == null) {
+            User user = getUserFromToken(token);
+            if (user == null) {
                 response.put("success", false);
-                response.put("message", "Invalid token");
+                response.put("message", "Invalid token or user not found");
                 return response;
             }
-
-            Optional<User> userOptional = userRepository.findByEmail(email);
-            if (userOptional.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "User not found");
-                return response;
-            }
-
-            User user = userOptional.get();
             response.put("success", true);
             response.put("username", user.getUsername());
             response.put("email", user.getEmail());
@@ -152,7 +142,7 @@ public class AuthService {
     public boolean isEmailAvailable(String email) {
         try {
             Optional<User> userOptional = userRepository.findByEmail(email);
-            return userOptional.isEmpty(); 
+            return userOptional.isEmpty();
         } catch (Exception e) {
 
             return false;
@@ -163,15 +153,15 @@ public class AuthService {
         Map<String, Object> response = new HashMap<>();
 
         try {
-
-            String userEmail = jwtUtil.extractUsername(token);
-            if (userEmail == null) {
+            // Extract username from token and find user by username
+            String tokenUsername = jwtUtil.extractUsername(token);
+            if (tokenUsername == null) {
                 response.put("success", false);
                 response.put("message", "Invalid token");
                 return response;
             }
 
-            Optional<User> userOptional = userRepository.findByEmail(userEmail);
+            Optional<User> userOptional = userRepository.findByUsername(tokenUsername);
             if (userOptional.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "User not found");
@@ -181,12 +171,10 @@ public class AuthService {
             User user = userOptional.get();
             boolean updated = false;
 
-
             if (username != null && !username.trim().isEmpty() && !username.equals(user.getUsername())) {
                 user.setUsername(username.trim());
                 updated = true;
             }
-
 
             if (email != null && !email.trim().isEmpty() && !email.equals(user.getEmail())) {
 
@@ -199,7 +187,6 @@ public class AuthService {
                 user.setEmail(email.trim());
                 updated = true;
             }
-
 
             if (newPassword != null && !newPassword.trim().isEmpty()) {
                 if (newPassword.length() < 6) {

@@ -12,22 +12,50 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class QrTextWebController {
 
-
     @Autowired
     private QrCodeService qrCodeService;
 
     @GetMapping("/qr/{id}")
     public String showQrText(@PathVariable Long id, Model model) {
-        QrCode qr = null;
         try {
-            qr = qrCodeService.getQrCodeById(id);
+            QrCode qrCode = qrCodeService.getQrCodeById(id);
+
+            if (qrCode != null) {
+                String content = qrCode.getInputText();
+
+                // Check if the content is a URL
+                if (isUrl(content)) {
+                    // Redirect to the URL
+                    return "redirect:" + content;
+                } else {
+                    // Display the text content
+                    model.addAttribute("content", content);
+                    model.addAttribute("type", qrCode.getType());
+                    model.addAttribute("timestamp", qrCode.getTimestamp());
+                    model.addAttribute("text", content); // Keep for backward compatibility
+                    return "qr-text";
+                }
+            } else {
+                model.addAttribute("error", "QR Code not found");
+                model.addAttribute("text", "QR code not found or invalid link.");
+                return "qr-error";
+            }
         } catch (Exception e) {
+            model.addAttribute("error", "Error loading QR Code: " + e.getMessage());
+            model.addAttribute("text", "Error loading QR code.");
+            return "qr-error";
         }
-        if (qr == null) {
-            model.addAttribute("text", "QR code not found or invalid link.");
-        } else {
-            model.addAttribute("text", qr.getInputText());
+    }
+
+    private boolean isUrl(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return false;
         }
-        return "qr-text";
+
+        text = text.trim().toLowerCase();
+        return text.startsWith("http://") ||
+                text.startsWith("https://") ||
+                text.startsWith("ftp://") ||
+                text.startsWith("www.");
     }
 }
