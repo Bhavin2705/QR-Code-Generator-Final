@@ -22,8 +22,8 @@ A modern web application to generate, scan, and manage QR codes. Supports text, 
 
 ### 1. Clone the Repository
 ```sh
-git clone https://github.com/Bhavin2705/QR-Code-Generator.git
-cd QR-Code-Generator
+git clone https://github.com/Bhavin2705/QR-Code-Generator-Final.git
+cd QR-Code-Generator-Final
 ```
 
 ### 2. Configure Database
