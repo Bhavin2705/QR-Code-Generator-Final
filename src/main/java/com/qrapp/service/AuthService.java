@@ -144,7 +144,6 @@ public class AuthService {
             Optional<User> userOptional = userRepository.findByEmail(email);
             return userOptional.isEmpty();
         } catch (Exception e) {
-
             return false;
         }
     }
@@ -153,7 +152,6 @@ public class AuthService {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // Extract username from token and find user by username
             String tokenUsername = jwtUtil.extractUsername(token);
             if (tokenUsername == null) {
                 response.put("success", false);
@@ -177,7 +175,6 @@ public class AuthService {
             }
 
             if (email != null && !email.trim().isEmpty() && !email.equals(user.getEmail())) {
-
                 Optional<User> existingUser = userRepository.findByEmail(email);
                 if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
                     response.put("success", false);

@@ -388,78 +388,104 @@ async function loadHistory() {
             </div>
             `;
         }).join('');
-// Edit QR Modal logic
-let currentEditQrId = null;
+        // Edit QR Modal logic
+        let currentEditQrId = null;
 
-const editQrModal = document.getElementById('editQrModal');
-const editQrText = document.getElementById('editQrText');
-const editQrCharCount = document.getElementById('editQrCharCount');
-const cancelEditQr = document.getElementById('cancelEditQr');
-const saveEditQr = document.getElementById('saveEditQr');
-const closeEditQrModalBtn = document.getElementById('closeEditQrModal');
+        const editQrModal = document.getElementById('editQrModal');
+        const editQrText = document.getElementById('editQrText');
+        const editQrCharCount = document.getElementById('editQrCharCount');
+        const cancelEditQr = document.getElementById('cancelEditQr');
+        const saveEditQr = document.getElementById('saveEditQr');
+        const closeEditQrModalBtn = document.getElementById('closeEditQrModal');
 
-function openEditQrModal(id, text) {
-    currentEditQrId = id;
-    editQrText.value = text;
-    updateEditQrCharCount();
-    editQrModal.style.display = 'flex';
-    document.body.classList.add('no-scroll');
-    setTimeout(() => { editQrText.focus(); }, 100);
-}
+        // --- Modal outside click to close logic ---
+        function addModalOutsideClickClose(modalOverlaySelector, modalContentSelector, closeFn) {
+            const overlay = document.querySelector(modalOverlaySelector);
+            const content = overlay && overlay.querySelector(modalContentSelector);
+            if (!overlay || !content) return;
+            overlay.addEventListener('mousedown', function (e) {
+                // Only close if click is directly on overlay, not on modal content or its children
+                if (e.target === overlay) {
+                    closeFn();
+                }
+            });
+        }
 
-function closeEditQrModal() {
-    editQrModal.style.display = 'none';
-    document.body.classList.remove('no-scroll');
-    currentEditQrId = null;
-}
-
-function updateEditQrCharCount() {
-    if (!editQrCharCount) return;
-    const count = editQrText.value.length;
-    editQrCharCount.textContent = `${count}/750 characters`;
-    editQrCharCount.style.color = count > 700 ? '#ef4444' : 'var(--text-muted)';
-}
-
-editQrText?.addEventListener('input', updateEditQrCharCount);
-cancelEditQr?.addEventListener('click', closeEditQrModal);
-closeEditQrModalBtn?.addEventListener('click', closeEditQrModal);
-
-saveEditQr?.addEventListener('click', async () => {
-    const newText = editQrText.value.trim();
-    if (!newText) {
-        showToast('QR content cannot be empty', 'error');
-        return;
-    }
-    if (newText.length > 750) {
-        showToast('QR content exceeds 750 characters', 'error');
-        return;
-    }
-    // Call backend to update QR content (implement endpoint as needed)
-    try {
-        const response = await fetch(`/api/qr/${currentEditQrId}/update`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ text: newText })
+        // Attach outside click close for Edit QR Modal
+        addModalOutsideClickClose('#editQrModal', '.custom-modal', closeEditQrModal);
+        // Attach outside click close for Custom Modal
+        addModalOutsideClickClose('#customModal', '.custom-modal', function () {
+            document.getElementById('customModal').style.display = 'none';
+            document.body.classList.remove('no-scroll');
         });
-        const data = await response.json();
-        if (!response.ok || data.error) throw new Error(data.error || 'Failed to update QR');
-        showToast('QR updated successfully', 'success');
-        closeEditQrModal();
-        await loadHistory();
-    } catch (e) {
-        showToast(e.message || 'Failed to update QR', 'error');
-    }
-});
+        // Attach outside click close for Edit Profile Modal
+        addModalOutsideClickClose('#editProfileModal', '.edit-profile-modal', function () {
+            document.getElementById('editProfileModal').style.display = 'none';
+            document.body.classList.remove('no-scroll');
+        });
 
-// Delegate click for edit-qr-btns
-document.addEventListener('click', function (e) {
-    if (e.target.closest('.edit-qr-btn')) {
-        const btn = e.target.closest('.edit-qr-btn');
-        const id = btn.getAttribute('data-id');
-        const text = btn.getAttribute('data-text');
-        openEditQrModal(id, text);
-    }
-});
+        function openEditQrModal(id, text) {
+            currentEditQrId = id;
+            editQrText.value = text;
+            updateEditQrCharCount();
+            editQrModal.style.display = 'flex';
+            document.body.classList.add('no-scroll');
+            setTimeout(() => { editQrText.focus(); }, 100);
+        }
+
+        function closeEditQrModal() {
+            editQrModal.style.display = 'none';
+            document.body.classList.remove('no-scroll');
+            currentEditQrId = null;
+        }
+
+        function updateEditQrCharCount() {
+            if (!editQrCharCount) return;
+            const count = editQrText.value.length;
+            editQrCharCount.textContent = `${count}/750 characters`;
+            editQrCharCount.style.color = count > 700 ? '#ef4444' : 'var(--text-muted)';
+        }
+
+        editQrText?.addEventListener('input', updateEditQrCharCount);
+        cancelEditQr?.addEventListener('click', closeEditQrModal);
+        closeEditQrModalBtn?.addEventListener('click', closeEditQrModal);
+
+        saveEditQr?.addEventListener('click', async () => {
+            const newText = editQrText.value.trim();
+            if (!newText) {
+                showToast('QR content cannot be empty', 'error');
+                return;
+            }
+            if (newText.length > 750) {
+                showToast('QR content exceeds 750 characters', 'error');
+                return;
+            }
+            // Call backend to update QR content (implement endpoint as needed)
+            try {
+                const response = await fetch(`/api/qr/${currentEditQrId}/update`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ text: newText })
+                });
+                const data = await response.json();
+                if (!response.ok || data.error) throw new Error(data.error || 'Failed to update QR');
+                showToast('QR updated successfully', 'success');
+                closeEditQrModal();
+                await loadHistory();
+            } catch (e) {
+                showToast(e.message || 'Failed to update QR', 'error');
+            }
+        });
+
+        // Delegate click for edit-qr-btns
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.edit-qr-btn')) {
+                const btn = e.target.closest('.edit-qr-btn');
+                const id = btn.getAttribute('data-id');
+                const text = btn.getAttribute('data-text');
+                openEditQrModal(id, text);
+            }
+        });
     } catch (error) {
         console.error('Error loading history:', error);
         historyList.innerHTML = `

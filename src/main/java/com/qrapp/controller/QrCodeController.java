@@ -204,12 +204,14 @@ public class QrCodeController {
             map.put("type", code.getType());
             map.put("timestamp", code.getTimestamp());
             try {
-                // Always use the original inputText for QR image, so it matches what was generated
+                // Always use the original inputText for QR image, so it matches what was
+                // generated
                 String qrCodeImage = qrCodeService.generateQrCodeImage(code.getInputText());
                 map.put("image", "data:image/png;base64," + qrCodeImage);
             } catch (Exception e) {
                 map.put("image", "");
-                System.err.println("Failed to generate QR image for history id " + code.getId() + ": " + e.getMessage());
+                System.err
+                        .println("Failed to generate QR image for history id " + code.getId() + ": " + e.getMessage());
             }
             result.add(map);
         }
@@ -252,7 +254,8 @@ public class QrCodeController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "QR Code not found"));
         }
         if (!qrCode.getUser().getId().equals(user.getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "You do not have permission to edit this QR code."));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "You do not have permission to edit this QR code."));
         }
         String newText = request.get("text");
         if (newText == null || newText.trim().isEmpty()) {
@@ -263,7 +266,8 @@ public class QrCodeController {
         }
         qrCode.setInputText(newText);
         qrCodeService.saveQrCode(qrCode);
-        return ResponseEntity.ok(Map.of("message", "QR updated successfully", "id", qrCode.getId(), "text", qrCode.getInputText()));
+        return ResponseEntity
+                .ok(Map.of("message", "QR updated successfully", "id", qrCode.getId(), "text", qrCode.getInputText()));
     }
 
     @PostMapping(value = "/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
