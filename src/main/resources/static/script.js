@@ -1,7 +1,5 @@
-// Base URL for API requests (configurable for public/private networks)
-const API_BASE_URL = window.location.origin; // Default to same origin; override in production if needed
+const API_BASE_URL = window.location.origin;
 
-// DOM elements
 const qrTextInput = document.getElementById('qrText');
 const generateBtn = document.getElementById('generateBtn');
 const qrFileInput = document.getElementById('qrFile');
@@ -10,19 +8,16 @@ const qrImageUploadArea = document.getElementById('qrImageUploadArea');
 const docUploadArea = document.getElementById('docUploadArea');
 const docFileInput = document.getElementById('docFileInput');
 
-// Result elements
 const qrResult = document.getElementById('qrResult');
 const scanResult = document.getElementById('scanResult');
 const historyList = document.getElementById('historyList');
 
-// UI elements
 const uploadArea = document.getElementById('uploadArea');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const toastContainer = document.getElementById('toastContainer');
 const themeToggle = document.getElementById('themeToggle');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-// Stats elements
 const totalGeneratedEl = document.getElementById('totalGenerated');
 const totalScannedEl = document.getElementById('totalScanned');
 const lastActivityEl = document.getElementById('lastActivity');
@@ -34,7 +29,6 @@ let stats = {
     lastActivity: null
 };
 
-// Helper function for authenticated API calls
 function getAuthHeaders() {
     const token = localStorage.getItem('authToken');
     return token ? {
@@ -45,7 +39,6 @@ function getAuthHeaders() {
     };
 }
 
-// Helper function for authenticated fetch with FormData
 function getAuthHeadersForFormData() {
     const token = localStorage.getItem('authToken');
     return token ? {
@@ -53,7 +46,6 @@ function getAuthHeadersForFormData() {
     } : {};
 }
 
-// Initialize localStorage for history if not already set
 function initializeLocalStorage() {
     if (!localStorage.getItem('qrHistory')) {
         localStorage.setItem('qrHistory', JSON.stringify([]));
@@ -116,7 +108,6 @@ function updateCharCount() {
     charCount.style.color = count > 450 ? '#ef4444' : 'var(--text-muted)';
 }
 
-// Add this function to ensure proper dropdown positioning
 function ensureDropdownVisibility() {
     const profileDropdown = document.getElementById('profileDropdown');
     if (profileDropdown) {
@@ -125,7 +116,6 @@ function ensureDropdownVisibility() {
     }
 }
 
-// QR Generation from Text (Backend)
 async function generateQR() {
     const text = qrTextInput.value.trim();
     if (!text) {
@@ -168,7 +158,6 @@ async function generateQR() {
     }
 }
 
-// QR Generation from Image (Backend: treat as scan, then re-generate QR)
 async function generateQRFromImage(file) {
     if (!file.type.startsWith('image/')) {
         showToast('Please upload an image file.', 'error');
@@ -210,9 +199,7 @@ async function generateQRFromImage(file) {
     }
 }
 
-// Display QR Code
 function displayQRCode(data) {
-    // Escape single quotes and newlines for safe inline JS
     const safeText = (data.text || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
     qrResult.innerHTML = `
         <div class="qr-success">
@@ -239,7 +226,6 @@ function displayQRCode(data) {
     `;
 }
 
-// QR Scanning with Image Upload (Backend)
 async function handleImageUpload(file) {
     if (!file.type.startsWith('image/')) {
         showToast('Please upload an image file.', 'error');
@@ -274,7 +260,6 @@ async function handleImageUpload(file) {
     }
 }
 
-// Display Scan Result
 function displayScanResult(data) {
     const isUrl = isValidUrl(data);
     scanResult.innerHTML = `
@@ -300,7 +285,6 @@ function displayScanResult(data) {
     `;
 }
 
-// Drag and drop handlers for QR scanning
 function handleDragOver(e) {
     e.preventDefault();
     uploadArea.classList.add('dragover');
@@ -320,7 +304,6 @@ function handleDrop(e) {
     }
 }
 
-// Drag and drop handlers for QR image generation
 function handleImageDragOver(e) {
     e.preventDefault();
     qrImageUploadArea.classList.add('dragover');
@@ -340,7 +323,6 @@ function handleImageDrop(e) {
     }
 }
 
-// Load history from backend
 async function loadHistory() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/qr/history`, {
@@ -364,7 +346,6 @@ async function loadHistory() {
         historyList.innerHTML = history.map((item, index) => {
             const typeLabel = item.type === 'scanned' ? '<span class="history-type scanned">Scanned</span>' : '<span class="history-type generated">Generated</span>';
             const exactTime = new Date(item.timestamp).toLocaleString();
-            // Escape single quotes and newlines for safe inline JS
             const safeText = (item.text || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
             return `
             <div class="history-item" style="animation-delay: ${index * 0.1}s;">
@@ -388,7 +369,6 @@ async function loadHistory() {
             </div>
             `;
         }).join('');
-        // Edit QR Modal logic
         let currentEditQrId = null;
 
         const editQrModal = document.getElementById('editQrModal');
@@ -939,8 +919,6 @@ async function uploadDocument(file) {
     }
 }
 
-/* Edit Profile Modal: fetch, populate, validation, and update */
-// Elements
 const editProfileModal = document.getElementById('editProfileModal');
 const editUsername = document.getElementById('editUsername');
 const editEmail = document.getElementById('editEmail');
@@ -950,13 +928,10 @@ const confirmNewPassword = document.getElementById('confirmNewPassword');
 const saveProfileChanges = document.getElementById('saveProfileChanges');
 const cancelEditProfile = document.getElementById('cancelEditProfile');
 const closeEditProfileModal = document.getElementById('closeEditProfileModal');
-// currentPassword removed by design
 const toggleNewPassword = document.getElementById('toggleNewPassword');
 const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
 
 let profileToken = localStorage.getItem('authToken') || null;
-
-// Open modal when Edit Profile clicked
 
 async function openEditProfileModal() {
     const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
@@ -972,7 +947,6 @@ async function openEditProfileModal() {
     editUsername.value = data.username || '';
     editEmail.value = data.email || '';
     emailValidationFeedback.textContent = '';
-    // currentPassword removed from modal
     newPassword.value = '';
     confirmNewPassword.value = '';
 

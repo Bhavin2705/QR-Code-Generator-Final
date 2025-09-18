@@ -57,7 +57,6 @@ public class QrCodeController {
     @Value("${server.port:8080}")
     private int serverPort;
 
-    // Helper method to extract user from HttpServletRequest
     private User getUserFromRequest(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -204,9 +203,14 @@ public class QrCodeController {
             map.put("type", code.getType());
             map.put("timestamp", code.getTimestamp());
             try {
-                // Always use the original inputText for QR image, so it matches what was
-                // generated
-                String qrCodeImage = qrCodeService.generateQrCodeImage(code.getInputText());
+                String qrContent = code.getInputText();
+                if (!qrContent.startsWith("http")) {
+                    String host = qrCodeService.getNetworkHost();
+                    String portSuffix = (serverPort == 80 || serverPort == 443) ? "" : ":" + serverPort;
+                    qrContent = serverScheme + "://" + host + portSuffix + "/qr/" + code.getId();
+                }
+
+                String qrCodeImage = qrCodeService.generateQrCodeImage(qrContent);
                 map.put("image", "data:image/png;base64," + qrCodeImage);
             } catch (Exception e) {
                 map.put("image", "");

@@ -23,16 +23,13 @@ public class QrTextWebController {
             if (qrCode != null) {
                 String content = qrCode.getInputText();
 
-                // Check if the content is a URL
                 if (isUrl(content)) {
-                    // Redirect to the URL
                     return "redirect:" + content;
                 } else {
-                    // Display the text content
                     model.addAttribute("content", content);
                     model.addAttribute("type", qrCode.getType());
                     model.addAttribute("timestamp", qrCode.getTimestamp());
-                    model.addAttribute("text", content); // Keep for backward compatibility
+                    model.addAttribute("text", content);
                     return "qr-text";
                 }
             } else {

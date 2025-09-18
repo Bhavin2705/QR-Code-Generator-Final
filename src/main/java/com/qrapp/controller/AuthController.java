@@ -21,6 +21,23 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    private ResponseEntity<Map<String, Object>> badRequest(String message) {
+        return ResponseEntity.badRequest().body(Map.of("success", false, "message", message));
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null && !email.trim().isEmpty() &&
+                email.matches(
+                        "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.(com|net|org|co\\.in|in|edu|gov|io|me|info|biz)$");
+    }
+
+    private boolean isValidUsername(String username) {
+        if (username == null)
+            return false;
+        String trimmed = username.trim();
+        return trimmed.matches("^[a-zA-Z0-9_]{3,20}$");
+    }
+
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> request) {
         String username = request.get("username");
@@ -28,42 +45,27 @@ public class AuthController {
         String password = request.get("password");
 
         if (username == null || username.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Username is required"));
+            return badRequest("Username is required");
         }
-
+        if (!isValidUsername(username)) {
+            return badRequest("Username must be 3-20 characters, letters, numbers, underscores only");
+        }
         if (email == null || email.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Email is required"));
+            return badRequest("Email is required");
         }
-
         if (!isValidEmail(email)) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Please enter a valid email address"));
+            return badRequest("Please enter a valid email address");
         }
-
         if (password == null || password.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Password is required"));
+            return badRequest("Password is required");
         }
-
         if (password.length() < 6) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Password must be at least 6 characters long"));
+            return badRequest("Password must be at least 6 characters long");
         }
 
         Map<String, Object> result = authService.register(username, email, password);
-
-        if ((Boolean) result.get("success")) {
-            return ResponseEntity.ok(result);
-        } else {
-            return ResponseEntity.badRequest().body(result);
-        }
+        return (Boolean) result.get("success") ? ResponseEntity.ok(result)
+                : badRequest(result.get("message").toString());
     }
 
     @PostMapping("/login")
@@ -72,30 +74,18 @@ public class AuthController {
         String password = request.get("password");
 
         if (email == null || email.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Email is required"));
+            return badRequest("Email is required");
         }
-
         if (!isValidEmail(email)) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Please enter a valid email address"));
+            return badRequest("Please enter a valid email address");
         }
-
         if (password == null || password.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Password is required"));
+            return badRequest("Password is required");
         }
 
         Map<String, Object> result = authService.login(email, password);
-
-        if ((Boolean) result.get("success")) {
-            return ResponseEntity.ok(result);
-        } else {
-            return ResponseEntity.badRequest().body(result);
-        }
+        return (Boolean) result.get("success") ? ResponseEntity.ok(result)
+                : badRequest(result.get("message").toString());
     }
 
     @PostMapping("/validate")
@@ -103,14 +93,11 @@ public class AuthController {
         String token = request.get("token");
 
         if (token == null || token.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Token is required"));
+            return badRequest("Token is required");
         }
 
         boolean isValid = authService.validateToken(token);
         String username = authService.getUsernameFromToken(token);
-
         return ResponseEntity.ok(Map.of(
                 "success", isValid,
                 "username", username != null ? username : ""));
@@ -120,33 +107,22 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> getUserProfile(
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "Authorization token is required"));
+            return ResponseEntity.status(401)
+                    .body(Map.of("success", false, "message", "Authorization token is required"));
         }
 
         String token = authHeader.substring(7);
         Map<String, Object> result = authService.getUserProfile(token);
-
-        if ((Boolean) result.get("success")) {
-            return ResponseEntity.ok(result);
-        } else {
-            return ResponseEntity.status(401).body(result);
-        }
+        return (Boolean) result.get("success") ? ResponseEntity.ok(result) : ResponseEntity.status(401).body(result);
     }
 
     @PostMapping("/profile/update")
     public ResponseEntity<Map<String, Object>> updateProfile(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestBody Map<String, String> request) {
-
-        System.out.println("Profile update request received");
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("Missing or invalid Authorization header");
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "Authorization token is required"));
+            return ResponseEntity.status(401)
+                    .body(Map.of("success", false, "message", "Authorization token is required"));
         }
 
         String token = authHeader.substring(7);
@@ -154,24 +130,13 @@ public class AuthController {
         String email = request.get("email");
         String newPassword = request.get("newPassword");
 
-        System.out.println("Update request - Username: " + username + ", Email: " + email +
-                ", Has new password: " + (newPassword != null && !newPassword.isEmpty()));
-
         if (email != null && !email.trim().isEmpty() && !isValidEmail(email)) {
-            System.out.println("Invalid email format: " + email);
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Please enter a valid email address"));
+            return badRequest("Please enter a valid email address");
         }
 
         Map<String, Object> result = authService.updateProfile(token, username, email, newPassword);
-        System.out.println("Update result: " + result.get("success") + " - " + result.get("message"));
-
-        if ((Boolean) result.get("success")) {
-            return ResponseEntity.ok(result);
-        } else {
-            return ResponseEntity.badRequest().body(result);
-        }
+        return (Boolean) result.get("success") ? ResponseEntity.ok(result)
+                : badRequest(result.get("message").toString());
     }
 
     @PostMapping("/check-email")
@@ -179,30 +144,15 @@ public class AuthController {
         String email = request.get("email");
 
         if (email == null || email.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "available", false,
-                    "message", "Email is required"));
+            return badRequest("Email is required");
         }
-
         if (!isValidEmail(email)) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "available", false,
-                    "message", "Please enter a valid email address"));
+            return badRequest("Please enter a valid email address");
         }
 
         boolean isAvailable = authService.isEmailAvailable(email);
-
         return ResponseEntity.ok(Map.of(
                 "available", isAvailable,
                 "message", isAvailable ? "Email is available" : "Email is already registered"));
-    }
-
-    private boolean isValidEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
-            return false;
-        }
-
-        String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
-        return email.matches(emailRegex);
     }
 }

@@ -342,7 +342,6 @@
         <button class="signup-btn" id="signupBtn"><i class="fas fa-user-plus"></i> Sign Up</button>
         <div class="login-link">Already have an account? <a href="login.html">Login</a></div>
 
-        <!-- Password Requirements Moved Here -->
         <div class="password-requirements" id="passwordRequirements">
             <h3><i class="fas fa-lock"></i> Password Requirements</h3>
             <div class="requirement" id="lengthReq">
@@ -405,7 +404,7 @@
 
             // Email validation functions
             function isValidEmailFormat(email) {
-                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|net|org|co\.in|in|co|edu|gov|io|me|info|biz)$/;
                 return emailRegex.test(email);
             }
 
@@ -555,6 +554,12 @@
 
             // Add listeners for other form fields
             signupUsername.addEventListener('input', updateSignupButton);
+            signupUsername.addEventListener('blur', function () {
+                const username = signupUsername.value.trim();
+                if (username && !validateUsername(username)) {
+                    showToast('Username must be 3-20 characters, letters, numbers, underscores only', 'error');
+                }
+            });
             confirmPassword.addEventListener('input', updateSignupButton);
 
             // Initial button state
@@ -566,6 +571,9 @@
                 toast.style.display = 'block';
                 setTimeout(() => toast.style.display = 'none', 3000);
             }
+            function validateUsername(username) {
+                return /^[a-zA-Z0-9_]{3,20}$/.test(username);
+            }
 
             async function signup() {
                 const username = signupUsername.value.trim();
@@ -573,8 +581,13 @@
                 const password = signupPassword.value;
                 const confirm = confirmPassword.value;
 
+
                 if (!username || !email || !password || !confirm) {
                     showToast('Please fill in all fields', 'error');
+                    return;
+                }
+                if (!validateUsername(username)) {
+                    showToast('Username must be 3-20 characters, letters, numbers, underscores only', 'error');
                     return;
                 }
 

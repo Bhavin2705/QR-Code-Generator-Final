@@ -38,7 +38,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class QrCodeService {
-    // Save or update an existing QR code
     public QrCode saveQrCode(QrCode qrCode) {
         return qrCodeRepository.save(qrCode);
     }

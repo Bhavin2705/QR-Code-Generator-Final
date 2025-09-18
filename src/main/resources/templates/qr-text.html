@@ -143,7 +143,6 @@
                 <i class="fas fa-link" th:if="${type == 'url'}"></i>
                 <i class="fas fa-qrcode" th:unless="${type == 'text' or type == 'url'}"></i>
             </div>
-            <!-- Use content if available, fall back to text for backward compatibility -->
             <div class="content-text" th:text="${content != null ? content : text}">QR Content will appear here</div>
         </div>
 
@@ -151,7 +150,6 @@
             <i class="fas fa-copy"></i> Copy Content
         </button>
 
-        <!-- Only show meta info if we have type and timestamp -->
         <div class="meta-info" th:if="${type != null and timestamp != null}">
             <span>Type: <strong th:text="${type}">Unknown</strong></span>
             <span>Generated: <strong

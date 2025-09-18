@@ -27,7 +27,6 @@ public class QrCode {
     @Column(columnDefinition = "TEXT")
     private String inputText;
 
-    // 'generated' or 'scanned'
     private String type;
 
     private LocalDateTime timestamp;

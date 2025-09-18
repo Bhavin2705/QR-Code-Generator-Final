@@ -40,10 +40,9 @@ public class SecurityConfig {
                                 "/index.html",
                                 "/login.html",
                                 "/signup.html",
-                                "/*.css",
-                                "/*.js",
-                                "/favicon.ico",
-                                "/static/**")
+                                "/style.css",
+                                "/script.js",
+                                "/favicon.ico")
                         .permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.disable())
