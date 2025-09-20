@@ -47,3 +47,5 @@ Thumbs.db
 
 # Ignore application config backups
 application.properties.bak
+
+admin-credentials.env

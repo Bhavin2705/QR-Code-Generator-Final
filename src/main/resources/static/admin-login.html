@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | QR Connect Hub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 400px;
+            margin: 60px auto;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo i {
+            margin-right: 10px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 16px;
+            outline: none;
+            background: var(--surface-elevated);
+            color: var(--text-primary);
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            background: var(--surface-elevated);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+        }
+
+        .password-input {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            user-select: none;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--gradient-primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, #047857, #065f46);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(5, 150, 105, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo"><i class="fas fa-user-shield"></i> Admin Login</div>
+        <h2>Admin Login</h2>
+        <div class="input-group">
+            <input type="text" id="adminUsername" placeholder="Admin Username" required>
+        </div>
+        <div class="input-group password-input">
+            <input type="password" id="adminPassword" placeholder="Password" required>
+            <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+        </div>
+        <button class="login-btn" id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script src="admin-login.js"></script>
+</body>
+
+</html>

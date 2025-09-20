@@ -125,6 +125,13 @@ public class QrCodeService {
         }
     }
 
+    public void deleteQrCodesByUser(User user) {
+        List<QrCode> codes = qrCodeRepository.findByUserOrderByTimestampDesc(user);
+        for (QrCode qrCode : codes) {
+            deleteQrCode(qrCode.getId());
+        }
+    }
+
     public String generateQrCodeImage(String text) throws WriterException, IOException {
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
         BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, 300, 300);
@@ -258,5 +265,41 @@ public class QrCodeService {
 
     public int getServerPort() {
         return serverPort;
+    }
+
+    /**
+     * Deletes QR code DB records for which the referenced file is missing from
+     * disk.
+     * Scans both image and document QR codes.
+     * Returns the number of deleted records.
+     */
+    public int cleanupOrphanedQrCodes() {
+        List<QrCode> all = qrCodeRepository.findAll();
+        int deleted = 0;
+        for (QrCode qr : all) {
+            String inputText = qr.getInputText();
+            if (inputText != null) {
+                if (inputText.contains("/api/qr/image/")) {
+                    int idx = inputText.indexOf("/api/qr/image/");
+                    String filename = inputText.substring(idx + "/api/qr/image/".length());
+                    java.nio.file.Path path = imageStorageService.load(filename);
+                    if (!java.nio.file.Files.exists(path)) {
+                        qrCodeRepository.deleteById(qr.getId());
+                        deleted++;
+                        continue;
+                    }
+                } else if (inputText.contains("/api/qr/doc/")) {
+                    int idx = inputText.indexOf("/api/qr/doc/");
+                    String filename = inputText.substring(idx + "/api/qr/doc/".length());
+                    java.nio.file.Path path = documentStorageService.load(filename);
+                    if (!java.nio.file.Files.exists(path)) {
+                        qrCodeRepository.deleteById(qr.getId());
+                        deleted++;
+                        continue;
+                    }
+                }
+            }
+        }
+        return deleted;
     }
 }

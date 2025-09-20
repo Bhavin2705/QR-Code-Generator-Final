@@ -38,11 +38,19 @@ public class SecurityConfig {
                                 "/qr/**",
                                 "/",
                                 "/index.html",
+                                "/login",
                                 "/login.html",
+                                "/signup",
                                 "/signup.html",
+                                "/admin-login.html",
+                                "/admin.html",
                                 "/style.css",
                                 "/script.js",
-                                "/favicon.ico")
+                                "/admin.js",
+                                "/admin-login.js",
+                                "/favicon.ico",
+                                "/static/**",
+                                "/templates/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.disable())

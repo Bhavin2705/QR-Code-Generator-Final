@@ -728,9 +728,39 @@ async function checkAuthStatus() {
             }
         });
 
-        const data = await response.json();
-
-        if (data.success && response.ok) {
+        let data = null;
+        if (response.status === 403) {
+            // Forbidden, likely due to deleted or unauthorized user
+            showToast('Access forbidden. Please log in again.', 'error');
+            localStorage.removeItem('authToken');
+            userMenu.style.display = 'none';
+            authBtn.style.display = 'block';
+            authBtn.textContent = 'Login';
+            authBtn.onclick = () => window.location.href = 'login.html';
+            return false;
+        }
+        try {
+            data = await response.json();
+        } catch (e) {
+            // If response is empty or not JSON
+            showToast('Session error. Please log in again.', 'error');
+            localStorage.removeItem('authToken');
+            userMenu.style.display = 'none';
+            authBtn.style.display = 'block';
+            authBtn.textContent = 'Login';
+            authBtn.onclick = () => window.location.href = 'login.html';
+            return false;
+        }
+        if (response.status === 401 || !data.success) {
+            // Token is invalid/expired, remove and force logout
+            localStorage.removeItem('authToken');
+            userMenu.style.display = 'none';
+            authBtn.style.display = 'block';
+            authBtn.textContent = 'Login';
+            authBtn.onclick = () => window.location.href = 'login.html';
+            showToast('Session expired. Please log in again.', 'error');
+            return false;
+        } else {
             // User is logged in - show profile dropdown
             userMenu.style.display = 'block';
             authBtn.style.display = 'none';
@@ -741,14 +771,6 @@ async function checkAuthStatus() {
             // Initialize profile dropdown functionality
             initializeProfileDropdown();
             return true;
-        } else {
-            // Token is invalid, remove it and show login
-            localStorage.removeItem('authToken');
-            userMenu.style.display = 'none';
-            authBtn.style.display = 'block';
-            authBtn.textContent = 'Login';
-            authBtn.onclick = () => window.location.href = 'login.html';
-            return false;
         }
     } catch (error) {
         console.error('Error checking auth status:', error);
@@ -938,7 +960,8 @@ async function openEditProfileModal() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${profileToken}`
+            'Authorization': `Bearer ${profileToken}`,
+            'X-Log-Profile-View': 'true'
         }
     });
     const data = await response.json();

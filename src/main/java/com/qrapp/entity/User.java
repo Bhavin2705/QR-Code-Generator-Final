@@ -33,6 +33,12 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "role", nullable = false)
+    private String role = "user"; // "admin" or "user"
+
+    @Column(name = "status", nullable = false)
+    private String status = "active"; // "active" or "suspicious"
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -54,5 +60,7 @@ public class User {
         this.username = username;
         this.email = email;
         this.password = password;
+        this.role = "user";
+        this.status = "active";
     }
 }

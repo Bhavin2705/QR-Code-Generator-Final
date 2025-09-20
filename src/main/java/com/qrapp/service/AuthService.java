@@ -24,6 +24,9 @@ public class AuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private com.qrapp.service.SuspiciousActivityService suspiciousActivityService;
+
     public Map<String, Object> register(String username, String email, String password) {
         Map<String, Object> response = new HashMap<>();
 
@@ -40,7 +43,7 @@ public class AuthService {
 
         try {
             userRepository.save(user);
-            String token = jwtUtil.generateToken(username);
+            String token = jwtUtil.generateToken(username, user.getRole() != null ? user.getRole() : "user");
 
             response.put("success", true);
             response.put("message", "User registered successfully");
@@ -60,6 +63,9 @@ public class AuthService {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isEmpty()) {
+            // Check if a user with this email ever existed (deleted)
+            // If you want to keep a deleted user record, you should soft-delete (status =
+            // "deleted") instead of hard delete
             response.put("success", false);
             response.put("message", "Invalid email or password");
             return response;
@@ -67,13 +73,20 @@ public class AuthService {
 
         User user = userOptional.get();
 
+        // If you want to support soft-delete, check status here
+        if ("deleted".equalsIgnoreCase(user.getStatus())) {
+            response.put("success", false);
+            response.put("message", "Your account has been deleted by admin.");
+            return response;
+        }
+
         if (!passwordEncoder.matches(password, user.getPassword())) {
             response.put("success", false);
             response.put("message", "Invalid email or password");
             return response;
         }
 
-        String token = jwtUtil.generateToken(user.getUsername());
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole() != null ? user.getRole() : "user");
 
         response.put("success", true);
         response.put("message", "Login successful");
@@ -103,13 +116,13 @@ public class AuthService {
     public User getUserFromToken(String token) {
         try {
             String username = jwtUtil.extractUsername(token);
-            return userRepository.findByUsername(username).orElse(null);
+            return userRepository.findByUsernameAndStatusNot(username, "deleted").orElse(null);
         } catch (Exception e) {
             return null;
         }
     }
 
-    public Map<String, Object> getUserProfile(String token) {
+    public Map<String, Object> getUserProfile(String token, boolean logProfileView) {
         Map<String, Object> response = new HashMap<>();
 
         try {
@@ -124,6 +137,10 @@ public class AuthService {
                 response.put("success", false);
                 response.put("message", "Invalid token or user not found");
                 return response;
+            }
+            // Log suspicious profile view only when explicitly requested by caller
+            if (logProfileView && "suspicious".equalsIgnoreCase(user.getStatus())) {
+                suspiciousActivityService.logActivity(user, "profile_view");
             }
             response.put("success", true);
             response.put("username", user.getUsername());
@@ -159,7 +176,7 @@ public class AuthService {
                 return response;
             }
 
-            Optional<User> userOptional = userRepository.findByUsername(tokenUsername);
+            Optional<User> userOptional = userRepository.findByUsernameAndStatusNot(tokenUsername, "deleted");
             if (userOptional.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "User not found");
@@ -197,6 +214,10 @@ public class AuthService {
 
             if (updated) {
                 userRepository.save(user);
+                // Log suspicious profile update
+                if ("suspicious".equalsIgnoreCase(user.getStatus())) {
+                    suspiciousActivityService.logActivity(user, "profile_update");
+                }
                 response.put("success", true);
                 response.put("message", "Profile updated successfully");
                 response.put("username", user.getUsername());
