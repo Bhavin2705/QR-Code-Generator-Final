@@ -52,7 +52,8 @@ public class CustomUserDetailsService implements UserDetailsService {
             } catch (Exception e) {
                 // log and continue
             }
-            userRepository.deleteById(id);
+            user.setStatus("deleted");
+            userRepository.save(user);
             return true;
         }).orElse(false);
     }

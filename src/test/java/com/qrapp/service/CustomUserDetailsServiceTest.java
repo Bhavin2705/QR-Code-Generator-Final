@@ -5,11 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.qrapp.entity.User;
 import com.qrapp.repository.UserRepository;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
+@Transactional
 public class CustomUserDetailsServiceTest {
     @Autowired
     private CustomUserDetailsService service;
@@ -23,5 +26,11 @@ public class CustomUserDetailsServiceTest {
         repo.save(user);
         assertTrue(service.markUserSuspicious(user.getId()));
         assertTrue(service.unmarkUserSuspicious(user.getId()));
+    }
+
+    @AfterAll
+    static void cleanTestUsers(
+            @org.springframework.beans.factory.annotation.Autowired CustomUserDetailsService customUserDetailsService) {
+        customUserDetailsService.deleteAllUsers();
     }
 }

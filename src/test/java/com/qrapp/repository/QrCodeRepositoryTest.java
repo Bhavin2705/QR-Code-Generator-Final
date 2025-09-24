@@ -4,12 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.qrapp.entity.QrCode;
+import com.qrapp.service.CustomUserDetailsService;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
+@Transactional
 public class QrCodeRepositoryTest {
     @Autowired
     private QrCodeRepository qrCodeRepository;
@@ -28,5 +32,11 @@ public class QrCodeRepositoryTest {
         QrCode found = qrCodeRepository.findById(qr.getId()).orElse(null);
         assertNotNull(found);
         assertEquals("testQR", found.getInputText());
+    }
+
+    @AfterAll
+    static void cleanTestUsers(
+            @org.springframework.beans.factory.annotation.Autowired CustomUserDetailsService customUserDetailsService) {
+        customUserDetailsService.deleteAllUsers();
     }
 }
