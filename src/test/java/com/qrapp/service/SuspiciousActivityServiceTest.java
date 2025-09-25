@@ -4,14 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.qrapp.entity.User;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import org.junit.jupiter.api.AfterAll;
-import com.qrapp.service.CustomUserDetailsService;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 public class SuspiciousActivityServiceTest {
     @Autowired

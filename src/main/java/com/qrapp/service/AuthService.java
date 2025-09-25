@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -39,7 +40,12 @@ public class AuthService {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
+        String encodedPassword = passwordEncoder.encode(password);
+        log.debug("[DEBUG] Registering user: {}, email: {}, raw password: {}, encoded password: {}", username, email,
+                password, encodedPassword);
+        user.setPassword(encodedPassword);
+        user.setStatus("active");
+        user.setRole("user");
 
         try {
             userRepository.save(user);
@@ -80,7 +86,10 @@ public class AuthService {
             return response;
         }
 
+        log.debug("[DEBUG] Login attempt for email: {}, raw password: {}, stored encoded password: {}", email, password,
+                user.getPassword());
         if (!passwordEncoder.matches(password, user.getPassword())) {
+            log.debug("[DEBUG] Password mismatch for email: {}", email);
             response.put("success", false);
             response.put("message", "Invalid email or password");
             return response;

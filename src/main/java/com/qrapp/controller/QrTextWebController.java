@@ -1,9 +1,11 @@
+
 package com.qrapp.controller;
 
 import com.qrapp.entity.QrCode;
 import com.qrapp.service.QrCodeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,15 @@ public class QrTextWebController {
 
     @Autowired
     private QrCodeService qrCodeService;
+
+    @GetMapping("/qr/text/{id}")
+    public ResponseEntity<String> getQrTextPageWithId(@PathVariable Long id) {
+        QrCode qrCode = qrCodeService.getQrCodeById(id);
+        if (qrCode == null) {
+            return ResponseEntity.status(404).body("No static resource qr/text/" + id + ".");
+        }
+        return ResponseEntity.ok(qrCode.getInputText());
+    }
 
     @GetMapping("/qr/{id}")
     public String showQrText(@PathVariable Long id, Model model) {

@@ -8,7 +8,7 @@ import com.qrapp.service.CustomUserDetailsService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,26 +23,16 @@ public class AdminController {
     private CustomUserDetailsService userDetailsService;
     // Removed unused AuthService
 
-    // RBAC: Only allow admins
-    private boolean isAdmin(Authentication authentication) {
-        return authentication != null && authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-    }
-
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users")
-    public ResponseEntity<?> getAllUsers(Authentication authentication) {
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body("Forbidden: Admins only");
-        }
+    public ResponseEntity<?> getAllUsers() {
         List<User> users = userDetailsService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id, Authentication authentication) {
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body(java.util.Map.of("error", "Forbidden: Admins only"));
-        }
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         boolean deleted = userDetailsService.deleteUserById(id);
         if (deleted) {
             return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User deleted"));
@@ -51,20 +41,16 @@ public class AdminController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/users")
-    public ResponseEntity<?> deleteAllUsers(Authentication authentication) {
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body(java.util.Map.of("error", "Forbidden: Admins only"));
-        }
+    public ResponseEntity<?> deleteAllUsers() {
         int deletedCount = userDetailsService.deleteAllUsers();
         return ResponseEntity.ok(java.util.Map.of("success", true, "deleted", deletedCount));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/users/{id}/suspicious")
-    public ResponseEntity<?> markUserSuspicious(@PathVariable Long id, Authentication authentication) {
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body(java.util.Map.of("error", "Forbidden: Admins only"));
-        }
+    public ResponseEntity<?> markUserSuspicious(@PathVariable Long id) {
         boolean marked = userDetailsService.markUserSuspicious(id);
         if (marked) {
             return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User marked as suspicious"));
@@ -73,11 +59,9 @@ public class AdminController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/users/{id}/suspicious")
-    public ResponseEntity<?> unmarkUserSuspicious(@PathVariable Long id, Authentication authentication) {
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body(java.util.Map.of("error", "Forbidden: Admins only"));
-        }
+    public ResponseEntity<?> unmarkUserSuspicious(@PathVariable Long id) {
         boolean unmarked = userDetailsService.unmarkUserSuspicious(id);
         if (unmarked) {
             return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User unmarked as suspicious"));

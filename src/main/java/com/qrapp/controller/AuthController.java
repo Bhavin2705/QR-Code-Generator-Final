@@ -2,13 +2,17 @@ package com.qrapp.controller;
 
 import java.util.Map;
 
-import com.qrapp.service.AuthService;
 import com.qrapp.entity.User;
 import com.qrapp.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import com.qrapp.service.AuthService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+// ...existing code...
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+// ...existing code...
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,8 +30,10 @@ public class AuthController {
     private AuthService authService;
     @Autowired
     private UserRepository userRepository;
+    // ...existing code...
+
     @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private AuthenticationManager authenticationManager;
     @Autowired
     private com.qrapp.util.JwtUtil jwtUtil;
 
@@ -38,27 +44,24 @@ public class AuthController {
         if (username == null || password == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Missing fields"));
         }
-        // Try to resolve the provided identifier as a username first. If not found and
-        // it looks like an email, try looking up by email. This lets admins log in
-        // using either their username or email address from the admin login form.
-        User user = userRepository.findByUsernameAndStatusNot(username, "deleted").orElse(null);
-        if (user == null && isValidEmail(username)) {
-            user = userRepository.findByEmail(username).orElse(null);
-            // treat deleted users as not found
-            if (user != null && "deleted".equalsIgnoreCase(user.getStatus())) {
-                user = null;
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password));
+            User user = userRepository.findByUsernameAndStatusNot(username, "deleted").orElse(null);
+            if (user == null && isValidEmail(username)) {
+                user = userRepository.findByEmail(username).orElse(null);
+                if (user != null && "deleted".equalsIgnoreCase(user.getStatus())) {
+                    user = null;
+                }
             }
-        }
-
-        if (user == null || !"admin".equalsIgnoreCase(user.getRole())) {
-            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Not an admin user"));
-        }
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+            if (user == null || !"admin".equalsIgnoreCase(user.getRole())) {
+                return ResponseEntity.status(403).body(Map.of("success", false, "message", "Not an admin user"));
+            }
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+            return ResponseEntity.ok(Map.of("success", true, "token", token));
+        } catch (AuthenticationException ex) {
             return ResponseEntity.status(401).body(Map.of("success", false, "message", "Invalid credentials"));
         }
-        // Generate JWT token with role using bean
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-        return ResponseEntity.ok(Map.of("success", true, "token", token));
     }
 
     private ResponseEntity<Map<String, Object>> badRequest(String message) {
@@ -116,24 +119,27 @@ public class AuthController {
         if (email == null || email.trim().isEmpty()) {
             return badRequest("Email is required");
         }
-        if (!isValidEmail(email)) {
-            return badRequest("Please enter a valid email address");
-        }
         if (password == null || password.trim().isEmpty()) {
             return badRequest("Password is required");
         }
 
-        Map<String, Object> result = authService.login(email, password);
-        // Log suspicious login
-        if (result.get("success") != null && (Boolean) result.get("success")) {
-            // Only log if user is suspicious
-            User user = userRepository.findByEmail(email).orElse(null); // No change needed here, as email is unique
-            if (user != null && "suspicious".equalsIgnoreCase(user.getStatus())) {
+        // Try to find user by email
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null || "deleted".equalsIgnoreCase(user.getStatus())) {
+            return badRequest("Invalid email or password");
+        }
+        try {
+            // Authenticate using username (Spring Security default)
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), password));
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+            if ("suspicious".equalsIgnoreCase(user.getStatus())) {
                 suspiciousActivityService.logActivity(user, "login");
             }
+            return ResponseEntity.ok(Map.of("success", true, "token", token));
+        } catch (AuthenticationException ex) {
+            return badRequest("Invalid email or password");
         }
-        return (Boolean) result.get("success") ? ResponseEntity.ok(result)
-                : badRequest(result.get("message").toString());
     }
 
     @PostMapping("/validate")
