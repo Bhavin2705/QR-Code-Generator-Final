@@ -9,7 +9,7 @@ public class JwtConfig {
     @Value("${jwt.secret:mySecretKey}")
     private String secret;
 
-    @Value("${jwt.expiration:86400000}") 
+    @Value("${jwt.expiration:86400000}")
     private Long expiration;
 
     public String getSecret() {

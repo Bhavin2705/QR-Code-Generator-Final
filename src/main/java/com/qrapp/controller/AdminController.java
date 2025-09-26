@@ -42,6 +42,28 @@ public class AdminController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/users/{id}/block")
+    public ResponseEntity<?> blockUser(@PathVariable Long id) {
+        boolean blocked = userDetailsService.blockUser(id);
+        if (blocked) {
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User blocked"));
+        } else {
+            return ResponseEntity.status(404).body(java.util.Map.of("error", "User not found or cannot block admin"));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/users/{id}/unblock")
+    public ResponseEntity<?> unblockUser(@PathVariable Long id) {
+        boolean unblocked = userDetailsService.unblockUser(id);
+        if (unblocked) {
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User unblocked"));
+        } else {
+            return ResponseEntity.status(404).body(java.util.Map.of("error", "User not found"));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/users")
     public ResponseEntity<?> deleteAllUsers() {
         int deletedCount = userDetailsService.deleteAllUsers();

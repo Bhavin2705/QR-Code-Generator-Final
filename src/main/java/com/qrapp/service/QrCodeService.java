@@ -109,6 +109,8 @@ public class QrCodeService {
                         java.nio.file.Path path = imageStorageService.load(filename);
                         java.nio.file.Files.deleteIfExists(path);
                     } catch (Exception e) {
+                        System.err.println("Failed to delete image file '" + filename + "': " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
                 idx = inputText.indexOf(docPrefix);
@@ -118,6 +120,8 @@ public class QrCodeService {
                         java.nio.file.Path path = documentStorageService.load(filename);
                         java.nio.file.Files.deleteIfExists(path);
                     } catch (Exception e) {
+                        System.err.println("Failed to delete document file '" + filename + "': " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
             }

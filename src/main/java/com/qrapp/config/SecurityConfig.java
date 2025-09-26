@@ -1,4 +1,3 @@
-
 package com.qrapp.config;
 
 import java.util.Arrays;
@@ -54,6 +53,7 @@ public class SecurityConfig {
                                 "/signup.html",
                                 "/admin-login.html",
                                 "/admin.html",
+                                "/admin",
                                 "/style.css",
                                 "/script.js",
                                 "/admin.js",
@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/static/**",
                                 "/templates/**")
                         .permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(form -> form.disable())

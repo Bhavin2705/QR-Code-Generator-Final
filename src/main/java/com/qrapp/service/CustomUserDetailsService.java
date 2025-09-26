@@ -26,34 +26,40 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsernameAndStatusNot(username, "deleted")
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())
                 .password(user.getPassword())
-                .authorities(user.getRole() != null && user.getRole().equalsIgnoreCase("admin") ? "ROLE_ADMIN" : "ROLE_USER")
+                .authorities(user.getRole() != null ? user.getRole() : "ROLE_USER")
                 .build();
     }
 
-    // Admin methods
+    private boolean isAdminRole(String role) {
+        if (role == null)
+            return false;
+        String r = role.trim().toUpperCase();
+        if (r.startsWith("ROLE_"))
+            r = r.substring(5);
+        return "ADMIN".equals(r);
+    }
+
     public List<User> getAllUsers() {
-        // Hide admin accounts from the list
         return userRepository.findAll().stream()
-                .filter(user -> !user.getRole().equalsIgnoreCase("admin"))
+                .filter(u -> !isAdminRole(u.getRole()))
                 .toList();
     }
 
     public boolean deleteUserById(Long id) {
         return userRepository.findById(id).map(user -> {
-            if (user.getRole().equalsIgnoreCase("admin"))
+            if (isAdminRole(user.getRole()))
                 return false;
-            // remove associated QR codes and files
             try {
                 qrCodeService.deleteQrCodesByUser(user);
             } catch (Exception e) {
-                // log and continue
+                System.err.println("Failed to delete QR codes for user id " + user.getId() + ": " + e.getMessage());
+                e.printStackTrace();
             }
-            user.setStatus("deleted");
-            userRepository.save(user);
+            // permanently remove user when admin deletes
+            userRepository.deleteById(user.getId());
             return true;
         }).orElse(false);
     }
@@ -83,17 +89,36 @@ public class CustomUserDetailsService implements UserDetailsService {
         List<User> all = userRepository.findAll();
         int deleted = 0;
         for (User u : all) {
-            if (u.getRole() != null && u.getRole().equalsIgnoreCase("admin")) {
-                // skip admins
+            if (isAdminRole(u.getRole())) {
                 continue;
             }
             try {
                 qrCodeService.deleteQrCodesByUser(u);
             } catch (Exception e) {
+                System.err.println("Failed to delete QR codes for user id " + u.getId() + ": " + e.getMessage());
+                e.printStackTrace();
             }
             userRepository.deleteById(u.getId());
             deleted++;
         }
         return deleted;
+    }
+
+    public boolean blockUser(Long id) {
+        return userRepository.findById(id).map(user -> {
+            if (isAdminRole(user.getRole()))
+                return false;
+            user.setStatus("blocked");
+            userRepository.save(user);
+            return true;
+        }).orElse(false);
+    }
+
+    public boolean unblockUser(Long id) {
+        return userRepository.findById(id).map(user -> {
+            user.setStatus("active");
+            userRepository.save(user);
+            return true;
+        }).orElse(false);
     }
 }

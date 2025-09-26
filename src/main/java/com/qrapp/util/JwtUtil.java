@@ -54,9 +54,7 @@ public class JwtUtil {
 
     public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        // Normalize role to lowercase to avoid casing mismatches between
-        // token consumers (frontend) and stored role values.
-        claims.put("role", role != null ? role.toLowerCase() : null);
+        claims.put("role", role != null ? role : null);
         return createToken(claims, username);
     }
 

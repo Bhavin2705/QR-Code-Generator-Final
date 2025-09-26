@@ -8,7 +8,6 @@ import com.qrapp.repository.UserRepository;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-// Removed unused import
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @SpringBootApplication
@@ -26,10 +25,9 @@ public class QrGeneratorApplication {
                 User admin = new User();
                 admin.setUsername("admin");
                 admin.setEmail("admin.secure@qrapp.com");
-                // Strong password: 12+ chars, mix of upper/lower/digit/special
                 String strongPassword = "Adm1n!2025_Secure";
                 admin.setPassword(encoder.encode(strongPassword));
-                admin.setRole("admin");
+                admin.setRole("ROLE_ADMIN");
                 admin.setStatus("active");
                 userRepository.save(admin);
                 System.out.println("Admin user created: username=admin, password=" + strongPassword);

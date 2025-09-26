@@ -86,6 +86,8 @@ public class QrCodeController {
                     .contentType(mediaType)
                     .body(file);
         } catch (Exception e) {
+            System.err.println("Failed to serve image '" + filename + "': " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.notFound().build();
         }
     }
@@ -105,6 +107,8 @@ public class QrCodeController {
                     .contentType(mediaType)
                     .body(file);
         } catch (Exception e) {
+            System.err.println("Failed to serve document '" + filename + "': " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.notFound().build();
         }
     }
@@ -138,6 +142,8 @@ public class QrCodeController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("Failed to generate QR code: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -298,10 +304,11 @@ public class QrCodeController {
             System.out.println("Scan successful");
             return ResponseEntity.ok(result);
         } catch (IOException e) {
-            System.out.println("IOException during scan: " + e.getMessage());
+            System.err.println("IOException during scan: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            System.out.println("Exception during scan: " + e.getMessage());
+            System.err.println("Exception during scan: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

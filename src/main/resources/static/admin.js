@@ -120,8 +120,14 @@ function getJwtPayload(token) {
 if (window.location.pathname.endsWith('admin.html')) {
     const token = localStorage.getItem('authToken');
     const payload = getJwtPayload(token);
-    if (!payload || payload.role !== 'admin') {
+    if (!payload) {
         window.location.href = 'admin-login.html';
+    } else {
+        const roleClaim = (payload.role || '').toString();
+        const normalized = roleClaim.startsWith('ROLE_') ? roleClaim.substring(5).toLowerCase() : roleClaim.toLowerCase();
+        if (normalized !== 'admin') {
+            window.location.href = 'admin-login.html';
+        }
     }
 }
 const API_BASE_URL = window.location.origin;
@@ -216,25 +222,35 @@ async function fetchUsers() {
     userTableBody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>`;
     try {
         const response = await fetch(`${API_BASE_URL}/api/admin/users`, { headers: getAuthHeaders() });
-        if (!response.ok) throw new Error('Failed to fetch users');
-        const users = await response.json();
-        if (!Array.isArray(users) || users.length === 0) {
+        if (!response.ok) {
+            // If unauthorized or server error, surface the message
+            const errText = await response.text().catch(() => 'Failed to fetch users');
+            throw new Error(errText || 'Failed to fetch users');
+        }
+        const users = await response.json().catch(() => null);
+        const visibleUsers = Array.isArray(users) ? users.filter(user => user && user.status !== 'deleted') : [];
+        if (visibleUsers.length === 0) {
             userTableBody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fas fa-users"></i> No users found</td></tr>`;
             return;
         }
-        userTableBody.innerHTML = users
-            .filter(user => user.status !== 'deleted')
+        userTableBody.innerHTML = visibleUsers
             .map(user => {
                 const suspiciousBtn = user.status === 'suspicious'
                     ? `<button class="admin-btn ok" onclick="unmarkSuspicious('${user.id}')"><i class="fas fa-check-circle"></i> Unmark Suspicious</button>`
                     : `<button class="admin-btn suspicious" onclick="markSuspicious('${user.id}')"><i class="fas fa-exclamation-triangle"></i> Mark Suspicious</button>`;
+                const rawRole = user.role || 'user';
+                const displayRole = rawRole.startsWith('ROLE_') ? rawRole.substring(5) : rawRole;
+                const blockBtn = user.status === 'blocked'
+                    ? `<button class="admin-btn ok" onclick="unblockUser('${user.id}')"><i class="fas fa-unlock"></i> Unblock</button>`
+                    : `<button class="admin-btn delete" onclick="blockUser('${user.id}')"><i class="fas fa-lock"></i> Block</button>`;
                 return `<tr>
                     <td>${user.username}</td>
                     <td>${user.email}</td>
-                    <td><span class="user-status ${user.role}">${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span></td>
+                    <td><span class="user-status ${displayRole.toLowerCase()}">${displayRole.charAt(0).toUpperCase() + displayRole.slice(1).toLowerCase()}</span></td>
                     <td><span class="user-status ${user.status}">${user.status === 'suspicious' ? 'Suspicious' : 'Active'}</span></td>
                     <td class="user-actions">
                         ${suspiciousBtn}
+                        ${blockBtn}
                         <button class="admin-btn delete" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i> Delete</button>
                     </td>
                 </tr>`;
@@ -251,6 +267,44 @@ async function fetchUsers() {
                         const data = await response.json();
                         if (!response.ok || data.error) throw new Error(data.error || 'Failed to unmark user as suspicious');
                         showToast('User unmarked as suspicious', 'success');
+                        fetchUsers();
+                    } catch (err) {
+                        showToast(err.message, 'error');
+                    }
+                }
+            });
+        };
+        window.blockUser = function (id) {
+            showModal({
+                title: 'Block User',
+                body: 'Are you sure you want to block this user? They will not be able to login until unblocked.',
+                okText: 'Block',
+                okClass: 'delete',
+                onOk: async () => {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}/block`, { method: 'POST', headers: getAuthHeaders() });
+                        const data = await response.json();
+                        if (!response.ok || data.error) throw new Error(data.error || 'Failed to block user');
+                        showToast('User blocked', 'success');
+                        fetchUsers();
+                    } catch (err) {
+                        showToast(err.message, 'error');
+                    }
+                }
+            });
+        };
+        window.unblockUser = function (id) {
+            showModal({
+                title: 'Unblock User',
+                body: 'Are you sure you want to unblock this user?',
+                okText: 'Unblock',
+                okClass: 'ok',
+                onOk: async () => {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}/unblock`, { method: 'POST', headers: getAuthHeaders() });
+                        const data = await response.json();
+                        if (!response.ok || data.error) throw new Error(data.error || 'Failed to unblock user');
+                        showToast('User unblocked', 'success');
                         fetchUsers();
                     } catch (err) {
                         showToast(err.message, 'error');
