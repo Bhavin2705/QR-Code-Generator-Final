@@ -39,33 +39,26 @@ public class AuthController {
 
     @PostMapping("/admin-login")
     public ResponseEntity<Map<String, Object>> adminLogin(@RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
+        String email = payload.get("email");
         String password = payload.get("password");
-        if (username == null || password == null) {
+        if (email == null || password == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Missing fields"));
         }
         try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, password));
-            User user = userRepository.findByUsernameAndStatusNot(username, "deleted").orElse(null);
-            boolean wasDeleted = false;
-            if (user == null && isValidEmail(username)) {
-                user = userRepository.findByEmail(username).orElse(null);
-                if (user != null && "deleted".equalsIgnoreCase(user.getStatus())) {
-                    wasDeleted = true;
-                }
-            }
-            if (wasDeleted || (user != null && "deleted".equalsIgnoreCase(user.getStatus()))) {
-                return ResponseEntity.status(403)
-                        .body(Map.of("success", false, "message", "Your account has been deleted by an administrator"));
-            }
-            if (user != null && "blocked".equalsIgnoreCase(user.getStatus())) {
-                return ResponseEntity.status(403)
-                        .body(Map.of("success", false, "message", "Your account has been blocked by an administrator"));
-            }
+            User user = userRepository.findByEmail(email).orElse(null);
             if (user == null || !"ROLE_ADMIN".equals(user.getRole())) {
                 return ResponseEntity.status(403).body(Map.of("success", false, "message", "Not an admin user"));
             }
+            if ("deleted".equalsIgnoreCase(user.getStatus())) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("success", false, "message", "Your account has been deleted by an administrator"));
+            }
+            if ("blocked".equalsIgnoreCase(user.getStatus())) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("success", false, "message", "Your account has been blocked by an administrator"));
+            }
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), password));
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
             return ResponseEntity.ok(Map.of("success", true, "token", token));
         } catch (AuthenticationException ex) {

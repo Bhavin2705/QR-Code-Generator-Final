@@ -111,15 +111,39 @@
             display: none;
             z-index: 1000;
         }
+
+        .theme-toggle {
+            border: 2px solid #059669;
+            background: #fff !important;
+            color: #059669 !important;
+            padding: 8px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 
 <body>
+    <nav style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 32px 0 32px;position:relative;">
+        <a href="/index.html" id="backToDashboardBtn" style="text-decoration:none;">
+            <button style="border:2px solid #059669;background:#fff;color:#059669;padding:8px 14px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:600;transition:background 0.3s, color 0.3s, border 0.3s;">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+        </a>
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+    </nav>
     <div class="container">
         <div class="logo"><i class="fas fa-user-shield"></i> Admin Login</div>
         <h2>Admin Login</h2>
         <div class="input-group">
-            <input type="text" id="adminUsername" placeholder="Admin Username" required>
+            <input type="email" id="adminEmail" placeholder="Admin Email" required>
         </div>
         <div class="input-group password-input">
             <input type="password" id="adminPassword" placeholder="Password" required>
@@ -129,6 +153,20 @@
     </div>
     <div id="toast" class="toast"></div>
     <script src="admin-login.js"></script>
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.body.classList.toggle('dark');
+                const theme = isDark ? 'dark' : 'light';
+                localStorage.setItem('qr-studio-theme', theme);
+                themeToggle.querySelector('i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            });
+            const savedTheme = localStorage.getItem('qr-studio-theme') || 'light';
+            document.body.classList.toggle('dark', savedTheme === 'dark');
+            themeToggle.querySelector('i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+    </script>
 </body>
 
 </html>

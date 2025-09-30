@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('loginBtn');
-    const adminUsername = document.getElementById('adminUsername');
+    const adminEmail = document.getElementById('adminEmail');
     const adminPassword = document.getElementById('adminPassword');
     const passwordToggle = document.getElementById('passwordToggle');
     const toast = document.getElementById('toast');
@@ -20,9 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function login() {
-        const username = adminUsername.value.trim();
+        const email = adminEmail.value.trim();
         const password = adminPassword.value.trim();
-        if (!username || !password) {
+        if (!email || !password) {
             showToast('Please fill in all fields', 'error');
             return;
         }
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/auth/admin-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ email, password })
             });
             const data = await response.json();
             if (data.success && data.token) {
@@ -47,6 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loginBtn.addEventListener('click', login);
-    adminUsername.addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
+    adminEmail.addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
     adminPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
 });

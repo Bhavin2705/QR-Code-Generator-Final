@@ -25,7 +25,7 @@ public class QrGeneratorApplication {
                 User admin = new User();
                 admin.setUsername("admin");
                 admin.setEmail("admin.secure@qrapp.com");
-                String strongPassword = "Adm1n!2025_Secure";
+                String strongPassword = "Admin@4312";
                 admin.setPassword(encoder.encode(strongPassword));
                 admin.setRole("ROLE_ADMIN");
                 admin.setStatus("active");
